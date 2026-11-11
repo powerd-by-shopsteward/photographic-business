@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Studio App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       LOGIN SCREEN
+       ============================================================ -->
+  <div id="login-screen" class="login-page">
+    <form id="login-form" class="login-box">
+      <h1>Studio Login</h1>
+      <input id="login-email" type="email" placeholder="Email"
+             required autocomplete="email">
+      <input id="login-password" type="password" placeholder="Password"
+             required autocomplete="current-password">
+      <button type="submit" style="width:100%">Login</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+
+  <!-- ============================================================
+       APP SHELL (sidebar + topbar + screens)
+       ============================================================ -->
+  <div id="app-shell" class="shell" style="display:none">
+
+    <aside class="sidebar">
+      <div class="brand" id="brand-name">Studio</div>
+      <nav id="main-nav">
+        <a href="#dashboard"    data-screen="dashboard"    data-role="owner">Dashboard</a>
+        <a href="#projects"     data-screen="projects">Projects</a>
+        <a href="#members"      data-screen="members"      data-role="owner">Members</a>
+        <a href="#clients"      data-screen="clients"      data-role="owner">Clients</a>
+        <a href="#gadgets"      data-screen="gadgets"      data-role="owner">Gadgets</a>
+        <a href="#invoices"     data-screen="invoices"     data-role="owner">Invoices</a>
+        <a href="#agreements"   data-screen="agreements"   data-role="owner">Agreements</a>
+        <a href="#reports"      data-screen="reports"      data-role="owner">Reports</a>
+        <a href="#studio-value" data-screen="studio-value" data-role="owner">Studio Value</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <header class="topbar">
+        <button id="profile-btn"  class="icon-btn" title="Profile">👤</button>
+        <button id="settings-btn" class="icon-btn" title="Settings" data-role="owner">⚙️</button>
+        <span id="user-name" class="user-name"></span>
+        <button id="logout-btn" class="logout-btn">Logout</button>
+      </header>
+
+      <section id="screen-dashboard"    class="screen-content"></section>
+      <section id="screen-projects"     class="screen-content"></section>
+      <section id="screen-project"      class="screen-content"></section>
+      <section id="screen-members"      class="screen-content"></section>
+      <section id="screen-clients"      class="screen-content"></section>
+      <section id="screen-gadgets"      class="screen-content"></section>
+      <section id="screen-invoices"     class="screen-content"></section>
+      <section id="screen-agreements"   class="screen-content"></section>
+      <section id="screen-agreement"    class="screen-content"></section>
+      <section id="screen-reports"      class="screen-content"></section>
+      <section id="screen-studio-value" class="screen-content"></section>
+      <section id="screen-profile"      class="screen-content"></section>
+      <section id="screen-settings"     class="screen-content"></section>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       SUPABASE CONFIG
+       Anon key is PUBLIC by design. RLS protects the data.
+       NEVER put the service_role key here.
+       ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL  = 'https://heajxjkqiptferlpwzqn.supabase.co';
+    window.SUPABASE_ANON = 'sb_publishable_ZUMIXO2a90bsYJPZqEFp8A_h7FqZZzW';
+  </script>
+  <script src="app.js"></script>
+
+</body>
+</html>
