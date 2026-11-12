@@ -4065,4 +4065,23 @@ document.getElementById('settings-btn').addEventListener('click', () => location
 // =====================================================================
 // ===== START =====
 // =====================================================================
+
+// =====================================================================
+// UPLOAD HELPER
+// =====================================================================
+async function uploadImage(file, folder) {
+  if (!file) return null;
+  if (file.size > 2 * 1024 * 1024) throw new Error('Image must be under 2MB');
+  
+  const ext = file.name.split('.').pop();
+  // Unique filename: folder/timestamp-random.ext
+  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+  
+  const { error } = await db.storage.from('studio-assets').upload(fileName, file);
+  if (error) throw error;
+  
+  const { data } = db.storage.from('studio-assets').getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
 bootApp();
