@@ -3515,23 +3515,25 @@ SCREENS.profile = async function(el) {
             <div></div>
           </div>
 
-          <hr>
+                   <hr>
           <h3>Branding</h3>
-          <p class="hint">Paste publicly accessible image URLs (Google Drive direct link, Imgur, or Supabase Storage URL). These appear on invoices and agreements.</p>
+          <p class="hint">Upload PNG or JPG images (max 2MB). These appear on invoices and agreements.</p>
           <div class="form-row">
-            <div><label>Logo URL</label><input id="pf3-logo" type="url" value="${esc(studio.logo_url || '')}"></div>
-            <div><label>Signature URL</label><input id="pf3-sign" type="url" value="${esc(studio.signature_url || '')}"></div>
-          </div>
-          <label>Stamp URL</label>
-          <input id="pf3-stamp" type="url" value="${esc(studio.stamp_url || '')}">
-
-          ${studio.logo_url || studio.signature_url || studio.stamp_url ? `
-            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
-              ${studio.logo_url    ? `<div><div class="label">Logo</div><img src="${esc(studio.logo_url)}" style="max-height:70px;border:1px solid #e5e7eb;border-radius:6px;padding:4px;background:#fff"></div>` : ''}
-              ${studio.signature_url ? `<div><div class="label">Signature</div><img src="${esc(studio.signature_url)}" style="max-height:70px;border:1px solid #e5e7eb;border-radius:6px;padding:4px;background:#fff"></div>` : ''}
-              ${studio.stamp_url    ? `<div><div class="label">Stamp</div><img src="${esc(studio.stamp_url)}" style="max-height:70px;border:1px solid #e5e7eb;border-radius:6px;padding:4px;background:#fff"></div>` : ''}
+            <div>
+              <label>Logo</label>
+              <input id="pf3-logo-file" type="file" accept="image/png, image/jpeg" style="margin-bottom:4px">
+              <img id="pf3-logo-preview" src="${esc(studio.logo_url || '')}" style="max-height:70px; display:${studio.logo_url ? 'block' : 'none'}; border-radius:6px; margin-top:4px;">
             </div>
-          ` : ''}
+            <div>
+              <label>Signature</label>
+              <input id="pf3-sign-file" type="file" accept="image/png, image/jpeg" style="margin-bottom:4px">
+              <img id="pf3-sign-preview" src="${esc(studio.signature_url || '')}" style="max-height:70px; display:${studio.signature_url ? 'block' : 'none'}; border-radius:6px; margin-top:4px;">
+            </div>
+          </div>
+          <label>Stamp</label>
+          <input id="pf3-stamp-file" type="file" accept="image/png, image/jpeg" style="margin-bottom:4px">
+          <img id="pf3-stamp-preview" src="${esc(studio.stamp_url || '')}" style="max-height:70px; display:${studio.stamp_url ? 'block' : 'none'}; border-radius:6px; margin-top:4px;">
+
 
           <p id="pf3-error" class="error"></p>
           <button type="submit" id="pf3-save" class="mt-2">Save Profile</button>
@@ -3546,47 +3548,67 @@ SCREENS.profile = async function(el) {
       </div>
     `;
 
-    document.getElementById('pf3-form').onsubmit = async e => {
+        document.getElementById('pf3-form').onsubmit = async e => {
       e.preventDefault();
       const errBox = document.getElementById('pf3-error');
       const saveBtn = document.getElementById('pf3-save');
       errBox.textContent = '';
       saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving…';
-      const payload = {
-        name:       document.getElementById('pf3-name').value.trim(),
-        owner_name: document.getElementById('pf3-owner').value.trim() || null,
-        phone:      document.getElementById('pf3-phone').value.trim() || null,
-        email:      document.getElementById('pf3-email').value.trim() || null,
-        address:    document.getElementById('pf3-address').value.trim() || null,
-        currency:   document.getElementById('pf3-currency').value.trim() || 'BDT',
-        timezone:   document.getElementById('pf3-tz').value.trim() || 'Asia/Dhaka',
-        logo_url:      document.getElementById('pf3-logo').value.trim() || null,
-        signature_url: document.getElementById('pf3-sign').value.trim() || null,
-        stamp_url:     document.getElementById('pf3-stamp').value.trim() || null,
-      };
+      saveBtn.textContent = 'Saving...';
+      
       try {
+        // Upload images if new files were selected
+        const logoFile = document.getElementById('pf3-logo-file').files[0];
+        const signFile = document.getElementById('pf3-sign-file').files[0];
+        const stampFile = document.getElementById('pf3-stamp-file').files[0];
+
+        let logoUrl = studio.logo_url;
+        let signUrl = studio.signature_url;
+        let stampUrl = studio.stamp_url;
+
+        if (logoFile) logoUrl = await uploadImage(logoFile, 'logo');
+        if (signFile) signUrl = await uploadImage(signFile, 'signature');
+        if (stampFile) stampUrl = await uploadImage(stampFile, 'stamp');
+
+        const payload = {
+          name:       document.getElementById('pf3-name').value.trim(),
+          owner_name: document.getElementById('pf3-owner').value.trim() || null,
+          phone:      document.getElementById('pf3-phone').value.trim() || null,
+          email:      document.getElementById('pf3-email').value.trim() || null,
+          address:    document.getElementById('pf3-address').value.trim() || null,
+          currency:   document.getElementById('pf3-currency').value.trim() || 'BDT',
+          timezone:   document.getElementById('pf3-tz').value.trim() || 'Asia/Dhaka',
+          logo_url:   logoUrl,
+          signature_url: signUrl,
+          stamp_url:  stampUrl,
+        };
+
         const { error } = await db.from('studio').update(payload)
           .eq('id', '00000000-0000-0000-0000-000000000001');
         if (error) throw error;
-        // Update brand name in sidebar
-        document.getElementById('brand-name').textContent = payload.name;
+        
         alert('Profile saved.');
-        SCREENS.profile(el);
-      } catch (err) {
-        errBox.textContent = err.message;
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save Profile';
-      }
-    };
-
-    document.getElementById('pf3-logout').onclick = logout;
-
-  } catch (err) {
-    el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
+        
+        // Load studio name and logo into the top bar and sidebar
+async function loadBrandName() {
+  const { data } = await db.from('studio').select('name, logo_url').single();
+  
+  if (data?.name) {
+    document.getElementById('brand-name').textContent = data.name;
   }
-};
-
+  
+  // Update the top-left Profile Button
+  const profileBtn = document.getElementById('profile-btn');
+  if (data?.logo_url) {
+    // If logo exists, show it
+    profileBtn.innerHTML = `<img src="${data.logo_url}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #ccc;">`;
+    profileBtn.style.padding = '2px'; // Fix padding so image fits nicely
+  } else {
+    // Fallback to human icon
+    profileBtn.innerHTML = '👤';
+    profileBtn.style.padding = '6px 10px';
+  }
+}
 // Load studio name into sidebar brand on boot (called from bootApp later)
 async function loadBrandName() {
   const { data } = await db.from('studio').select('name').single();
