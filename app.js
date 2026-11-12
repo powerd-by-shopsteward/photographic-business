@@ -124,30 +124,6 @@ function route() {
     </div>`;
   }
 }
-  // Hide all screens, show target
-  document.querySelectorAll('.screen-content').forEach(el => el.style.display = 'none');
-
-  const targetEl = document.getElementById('screen-' + name);
-  if (!targetEl) { console.warn('No screen:', name); return; }
-  targetEl.style.display = 'block';
-
-  // Sidebar active state
-  document.querySelectorAll('.sidebar a').forEach(a =>
-    a.classList.toggle('active', a.dataset.screen === name));
-
-  // Render
-  const renderer = SCREENS[name];
-  if (renderer) {
-    Promise.resolve(renderer(targetEl, param)).catch(err => {
-      console.error(err);
-      targetEl.innerHTML = `<div class="card"><p class="error">${err.message}</p></div>`;
-    });
-  } else {
-    targetEl.innerHTML = `<div class="card">
-      <p class="empty">This screen arrives in a later block.</p>
-    </div>`;
-  }
-}
 
 window.addEventListener('hashchange', route);
 
