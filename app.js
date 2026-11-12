@@ -3589,31 +3589,25 @@ SCREENS.profile = async function(el) {
         
         alert('Profile saved.');
         
-        // Load studio name and logo into the top bar and sidebar
-async function loadBrandName() {
-  const { data } = await db.from('studio').select('name, logo_url').single();
-  
-  if (data?.name) {
-    document.getElementById('brand-name').textContent = data.name;
-  }
-  
-  // Update the top-left Profile Button
-  const profileBtn = document.getElementById('profile-btn');
-  if (data?.logo_url) {
-    // If logo exists, show it
-    profileBtn.innerHTML = `<img src="${data.logo_url}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #ccc;">`;
-    profileBtn.style.padding = '2px'; // Fix padding so image fits nicely
-  } else {
-    // Fallback to human icon
-    profileBtn.innerHTML = '👤';
-    profileBtn.style.padding = '6px 10px';
-  }
-}
-// Load studio name into sidebar brand on boot (called from bootApp later)
-async function loadBrandName() {
-  const { data } = await db.from('studio').select('name').single();
-  if (data?.name) document.getElementById('brand-name').textContent = data.name;
-}
+       alert('Profile saved.');
+                
+                // Update the top-left icon and sidebar name instantly
+                loadBrandName(); 
+                SCREENS.profile(el);
+                
+              } catch (err) {
+                errBox.textContent = err.message;
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Profile';
+              }
+            }; // Closes pf3-form.onsubmit
+
+            document.getElementById('pf3-logout').onclick = logout;
+
+          } catch (err) {
+            el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
+          }
+        }; // Closes SCREENS.profile
 
 // =====================================================================
 // BLOCK 6C-1 — Settings screen (all tabs)
@@ -4084,9 +4078,6 @@ document.getElementById('logout-btn').addEventListener('click', logout);
 document.getElementById('profile-btn').addEventListener('click', () => location.hash = '#profile');
 document.getElementById('settings-btn').addEventListener('click', () => location.hash = '#settings');
 
-// =====================================================================
-// ===== START =====
-// =====================================================================
 
 // =====================================================================
 // UPLOAD HELPER
@@ -4105,5 +4096,31 @@ async function uploadImage(file, folder) {
   const { data } = db.storage.from('studio-assets').getPublicUrl(fileName);
   return data.publicUrl;
 }
+
+// =====================================================================
+// LOAD BRAND NAME & LOGO
+// =====================================================================
+async function loadBrandName() {
+  const { data } = await db.from('studio').select('name, logo_url').single();
+  
+  if (data?.name) {
+    document.getElementById('brand-name').textContent = data.name;
+  }
+  
+  // Update the top-left Profile Button
+  const profileBtn = document.getElementById('profile-btn');
+  if (data?.logo_url) {
+    profileBtn.innerHTML = `<img src="${data.logo_url}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #ccc;">`;
+    profileBtn.style.padding = '2px';
+  } else {
+    profileBtn.innerHTML = '👤';
+    profileBtn.style.padding = '6px 10px';
+  }
+}
+
+// =====================================================================
+// ===== START =====
+// =====================================================================
+
 
 bootApp();
