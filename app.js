@@ -2139,13 +2139,14 @@ SCREENS.agreement = async function(el, id) {
     ]);
     if (agRes.error) throw agRes.error;
 
-    const ag = agRes.data;
+        const ag = agRes.data;
     const studio = studioRes.data || { name: 'Studio' };
     const clients = clRes.data || [];
     const projects = prjRes.data || [];
     const payments = payRes.data || [];
     const meta = ag.metadata || {};
-        const payments = payRes.data || [];
+
+    // Calculate total received per project
     const receivedByProject = {};
     payments.forEach(p => {
       receivedByProject[p.project_id] = (receivedByProject[p.project_id] || 0) + Number(p.amount);
