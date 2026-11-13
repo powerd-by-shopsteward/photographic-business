@@ -2384,11 +2384,13 @@ SCREENS.agreement = async function(el, id) {
       updatePreview();
     });
 
-    // Save
+        // Save
     document.getElementById('ag-save').onclick = async () => {
       const btn = document.getElementById('ag-save');
       const err = document.getElementById('ag-error');
-      btn.disabled = true; btn.textContent = 'Saving...'; err.textContent = '';
+      btn.disabled = true; 
+      btn.textContent = 'Saving...'; 
+      err.textContent = '';
 
       const payload = {
         client_id: document.getElementById('ag-client').value,
@@ -2409,11 +2411,17 @@ SCREENS.agreement = async function(el, id) {
       try {
         const { error } = await db.from('agreements').update(payload).eq('id', id);
         if (error) throw error;
+        
         alert('Agreement saved successfully!');
+        
+        // Refresh the list in the background so when you click "Back" it's up to date
+        SCREENS.agreements(document.getElementById('screen-agreements'));
+        
       } catch(e) {
-        err.textContent = e.message;
+        err.textContent = "Save failed: " + e.message;
       } finally {
-        btn.disabled = false; btn.textContent = 'Save Agreement';
+        btn.disabled = false; 
+        btn.textContent = 'Save Agreement';
       }
     };
 
