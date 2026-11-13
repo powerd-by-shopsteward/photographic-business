@@ -447,9 +447,13 @@ async function openProjectForm() {
           <div><label>Venue Address</label><input id="pf-venue-addr" type="text"></div>
         </div>
 
-        <div class="form-row">
+                <div class="form-row form-row-3">
           <div><label>Quoted Amount</label><input id="pf-quoted" type="number" min="0" step="0.01" value="0"></div>
           <div><label>Confirmed Amount</label><input id="pf-confirmed" type="number" min="0" step="0.01" value="0"></div>
+          <div><label>Advance Payment</label><input id="pf-advance" type="number" min="0" step="0.01" value="0"></div>
+        </div>
+        <div style="margin-bottom:12px; text-align:right; font-weight:600; color:#4b5563;">
+          Balance Due: <span id="pf-balance-display">0</span>
         </div>
 
         <hr>
@@ -482,6 +486,17 @@ async function openProjectForm() {
     </div>
   `;
   document.body.appendChild(backdrop);
+
+    // Live calculation for balance
+  const updateBalance = () => {
+    const conf = Number(document.getElementById('pf-confirmed').value || 0);
+    const adv  = Number(document.getElementById('pf-advance').value || 0);
+    document.getElementById('pf-balance-display').textContent = fmtMoney(conf - adv);
+  };
+  
+  document.getElementById('pf-confirmed').addEventListener('input', updateBalance);
+  document.getElementById('pf-advance').addEventListener('input', updateBalance);
+  updateBalance(); // Run once on load in case values are pre-filled
 
   // 4) Renderers for dynamic sections
   function renderMembers() {
@@ -690,8 +705,23 @@ async function openProjectForm() {
         confirmed_amount:Number(document.getElementById('pf-confirmed').value || 0),
         notes:           document.getElementById('pf-notes').value.trim() || null,
       }).select().single();
-      if (pErr) throw pErr;
+     if (pErr) throw pErr;
       project = p;
+
+      // Record Advance Payment automatically
+      const advanceAmt = Number(document.getElementById('pf-advance').value || 0);
+      if (advanceAmt > 0) {
+        const { error: payErr } = await db.from('payments').insert({
+          project_id: project.id,
+          direction: 'in',
+          type: 'client_advance',
+          amount: advanceAmt,
+          date: todayISO(),
+          notes: 'Initial advance payment recorded during project creation',
+          created_by: CURRENT_PROFILE.id
+        });
+        if (payErr) throw payErr;
+      }
 
       // Members
       const memberRows = Object.entries(S.selMembers).map(([mid, { amount }]) => ({
