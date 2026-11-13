@@ -338,31 +338,35 @@ td.actions { text-align: right; white-space: nowrap; }
   th, td { padding: 8px 6px; }
 }
 
-/* ---------- 12. PRINT (agreements, invoices) ---------- */
+/* ===== PRINT (for agreements / invoices → Save as PDF) ===== */
 @media print {
   body * { visibility: hidden; }
+  
+  /* Target the A4 area */
   #print-area, #print-area * { visibility: visible; }
+  
   #print-area {
     position: absolute;
     left: 0;
     top: 0;
     width: 210mm;
-    padding: 15mm;
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0;
+    padding: 20mm;
     background: #fff;
-    color: #000;
+    box-shadow: none !important;
+    border: none;
   }
-  .print-watermark {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-30deg);
-    font-size: 100px;
-    color: rgba(0,0,0,.06);
-    font-weight: 900;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 0;
+
+  /* Hide UI elements that might sneak in */
+  .sidebar, .topbar, .modal-backdrop, .btn-group, button {
+    display: none !important;
   }
-  #print-area .content { position: relative; z-index: 1; }
-  @page { margin: 0; size: A4; }
+
+  /* Force page size */
+  @page { 
+    margin: 0; 
+    size: A4; 
+  }
 }
