@@ -1971,33 +1971,20 @@ async function openTemplateForm(existing) {
 
 // ============ NEW AGREEMENT MODAL ============
 async function openNewAgreementModal() {
-  const [cRes, tRes, pRes] = await Promise.all([
+  const [cRes, pRes] = await Promise.all([
     db.from('clients').select('id,name').order('name'),
-    db.from('agreement_templates').select('id,name,is_default,project_type_id').eq('active', true).order('name'),
-    db.from('projects').select('id,name,client_id,project_type_id').order('start_date', { ascending: false }),
+    db.from('projects').select('id,name,client_id').order('start_date', { ascending: false }),
   ]);
   const clients   = cRes.data || [];
-  const templates = tRes.data || [];
   const projects  = pRes.data || [];
-
-  if (!templates.length) {
-    alert('Create an agreement template first (Templates tab).');
-    return;
-  }
 
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
     <div class="modal" style="max-width:480px">
       <h2>New Agreement</h2>
+      <p class="muted small mb-2">Create a blank draft to fill out in the editor.</p>
       <form id="na-form" autocomplete="off">
-        <label>Template *</label>
-        <select id="na-template" required>
-          ${templates.map(t =>
-            `<option value="${t.id}" data-type="${t.project_type_id || ''}" ${t.is_default?'data-default="1"':''}>${esc(t.name)}</option>`
-          ).join('')}
-        </select>
-
         <label>Client *</label>
         <select id="na-client" required>
           <option value="">— select client —</option>
@@ -2007,9 +1994,8 @@ async function openNewAgreementModal() {
         <label>Project (optional)</label>
         <select id="na-project">
           <option value="">— none (client-level agreement) —</option>
-          ${projects.map(p => `<option value="${p.id}" data-client="${p.client_id}" data-type="${p.project_type_id || ''}">${esc(p.name)}</option>`).join('')}
+          ${projects.map(p => `<option value="${p.id}" data-client="${p.client_id}">${esc(p.name)}</option>`).join('')}
         </select>
-        <p class="hint">Pick a project to auto-fill date, venue, and amounts.</p>
 
         <p id="na-error" class="error"></p>
         <div class="modal-actions">
@@ -2038,27 +2024,16 @@ async function openNewAgreementModal() {
     e.preventDefault();
     const errBox = document.getElementById('na-error');
     errBox.textContent = '';
-    const template_id = document.getElementById('na-template').value;
     const client_id   = document.getElementById('na-client').value;
     const project_id  = document.getElementById('na-project').value || null;
 
-    if (!template_id || !client_id) {
-      errBox.textContent = 'Template and client are required'; return;
-    }
+    if (!client_id) { errBox.textContent = 'Client is required'; return; }
 
-    const { data: tpl } = await db.from('agreement_templates').select('*').eq('id', template_id).single();
-    if (!tpl) { errBox.textContent = 'Template not found'; return; }
-
-    // Create a draft agreement with template body as starting point
     const { data: created, error } = await db.from('agreements').insert({
-      client_id,
-      project_id,
-      template_id,
-      title:     tpl.name,
-      body_rendered: tpl.body,
-      total_amount:   0,
-      advance_amount: 0,
-      balance_amount: 0,
+      client_id, project_id,
+      title: 'New Agreement',
+      body_rendered: 'Draft',
+      total_amount: 0, advance_amount: 0, balance_amount: 0,
       status: 'draft',
       created_by: CURRENT_PROFILE.id,
     }).select().single();
