@@ -2070,8 +2070,27 @@ async function openNewAgreementModal() {
 }
 
 // =====================================================================
-// BLOCK 5B — Agreement Editor (form left, A4 preview right)
+// BLOCK 5B (NEW) — Smart Agreement Editor
 // =====================================================================
+
+// 1. Built-in Templates
+const DOC_TEMPLATES = {
+  wedding: {
+    name: 'Wedding Photography',
+    intro: 'This agreement is made on {{date}} between {{studio_name}} ("the Studio") and {{client_name}} ("the Client") for the wedding event at {{venue}}.',
+    scope: 'The Studio agrees to provide professional photography and videography services. The deliverables include {{photos}} professionally edited photographs and {{videos}} edited highlight video(s).',
+  },
+  product: {
+    name: 'Product / Commercial Shoot',
+    intro: 'This agreement is made on {{date}} between {{studio_name}} ("the Studio") and {{client_name}} ("the Client") for a commercial product shoot at {{venue}}.',
+    scope: 'The Studio agrees to provide commercial photography services. The deliverables include {{photos}} high-resolution retouched images and {{videos}} video ad(s).',
+  },
+  universal: {
+    name: 'Universal Event / Service',
+    intro: 'This agreement is made on {{date}} between {{studio_name}} ("the Studio") and {{client_name}} ("the Client") for the event "{{project_name}}" at {{venue}}.',
+    scope: 'The Studio agrees to provide professional photography services. The deliverables include {{photos}} edited images and {{videos}} video(s).',
+  }
+};
 
 SCREENS.agreement = async function(el, id) {
   if (!id) {
@@ -2081,223 +2100,154 @@ SCREENS.agreement = async function(el, id) {
   el.innerHTML = '<div class="loading">Loading agreement…</div>';
 
   try {
-    const [agRes, tmplRes, studioRes, clRes, prjRes, verRes] = await Promise.all([
-      db.from('agreements')
-        .select('*, client:clients(*), project:projects(*)')
-        .eq('id', id).single(),
-      db.from('agreement_templates').select('id,name,body,is_default').eq('active', true).order('name'),
+    // 2. Fetch Data
+    const [agRes, studioRes, clRes, prjRes] = await Promise.all([
+      db.from('agreements').select('*, client:clients(*), project:projects(*)').eq('id', id).single(),
       db.from('studio').select('*').single(),
       db.from('clients').select('id,name,phone,email,address').order('name'),
       db.from('projects').select('id,name,client_id,venue_name,start_date,confirmed_amount').order('start_date', {ascending:false}),
-      db.from('agreement_versions').select('id,version_no,edited_at').eq('agreement_id', id).order('version_no', {ascending:false}),
     ]);
     if (agRes.error) throw agRes.error;
 
-    const ag       = agRes.data;
-    const templates= tmplRes.data || [];
-    const studio   = studioRes.data || { name: 'Studio' };
-    const clients  = clRes.data || [];
+    const ag = agRes.data;
+    const studio = studioRes.data || { name: 'Studio' };
+    const clients = clRes.data || [];
     const projects = prjRes.data || [];
-    const versions = verRes.data || [];
-    const meta     = ag.metadata || {};
+    const meta = ag.metadata || {};
 
-    // Form state
-    const S = {
-      agreement_date: ag.agreement_date || (ag.created_at ? ag.created_at.split('T')[0] : todayISO()),
-      venue:          meta.venue || ag.project?.venue_name || '',
-      deliverables:   meta.deliverables || '',
-      total:          Number(ag.total_amount) || Number(ag.project?.confirmed_amount) || 0,
-      advance:        Number(ag.advance_amount) || 0,
-      body:           ag.body_rendered || '',
-    };
-    S.balance = S.total - S.advance;
+    // State for custom clauses
+    let customClauses = meta.clauses || [];
 
-    // ---- Substitution ----
-    function substitutionData() {
-      const clientId  = document.getElementById('ag-client').value;
-      const projectId = document.getElementById('ag-project').value;
-      const client    = clients.find(c => c.id === clientId) || {};
-      const project   = projects.find(p => p.id === projectId) || {};
-      return {
-        client_name:    client.name || '',
-        client_phone:   client.phone || '',
-        client_address: client.address || '',
-        project_name:   project.name || '',
-        project_date:   project.start_date ? fmtDate(project.start_date) : '',
-        venue:          document.getElementById('ag-venue').value || '',
-        total_amount:   fmtMoney(document.getElementById('ag-total').value),
-        advance_amount: fmtMoney(document.getElementById('ag-adv').value),
-        balance_amount: fmtMoney(Number(document.getElementById('ag-total').value || 0)
-                                - Number(document.getElementById('ag-adv').value || 0)),
-        deliverables:   document.getElementById('ag-deliv').value || '',
-        studio_name:    studio.name || '',
-        studio_phone:   studio.phone || '',
-        studio_address: studio.address || '',
-        agreement_no:   ag.agreement_no,
-        agreement_date: document.getElementById('ag-date').value
-                          ? fmtDate(document.getElementById('ag-date').value) : '',
-      };
-    }
-    function substitute(text, data) {
-      return String(text || '').replace(/\{\{(\w+)\}\}/g, (_, k) => data[k] ?? '');
-    }
-
-    // ---- Layout ----
+    // 3. Build Layout
     el.innerHTML = `
       <div style="margin-bottom:12px"><a href="#agreements" class="small">← Back to Agreements</a></div>
-      <div id="ag-layout" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start">
-        <style>
-          @media (max-width:1000px) { #ag-layout { grid-template-columns: 1fr !important; } #print-area { min-height:auto !important; padding:20px !important; } }
-          @media print {
-            #print-area { width:210mm !important; min-height:auto !important; padding:15mm !important; box-shadow:none !important; position:absolute !important; left:0 !important; top:0 !important; font-size:11pt !important; }
-            #print-area * { visibility:visible !important; }
-            .print-watermark { font-size:120px !important; }
-          }
-        </style>
-
-        <!-- LEFT: FORM -->
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
+        
+        <!-- LEFT PANEL: FORM -->
         <div>
           <div class="card">
-            <div class="flex-between mb-2">
-              <h2 style="margin:0">${esc(ag.agreement_no)}</h2>
-              <span class="${badgeClass(ag.status)}">${ag.status}</span>
-            </div>
-
-            <div class="form-row">
-              <div>
-                <label>Template</label>
-                <select id="ag-tpl">
-                  ${templates.map(t =>
-                    `<option value="${t.id}" data-body="${esc(t.body || '').replace(/"/g,'&quot;')}" ${t.id===ag.template_id?'selected':''}>${esc(t.name)}</option>`
-                  ).join('')}
-                </select>
-              </div>
-              <div>
-                <label>Agreement Date</label>
-                <input id="ag-date" type="date" value="${S.agreement_date}">
-              </div>
-            </div>
+            <h2 style="margin-bottom:16px">Agreement Setup</h2>
+            
+            <label>Template Style</label>
+            <select id="ag-template-type" style="margin-bottom:16px">
+              <option value="wedding" ${meta.template==='wedding'?'selected':''}>Wedding Photography</option>
+              <option value="product" ${meta.template==='product'?'selected':''}>Product / Commercial</option>
+              <option value="universal" ${meta.template==='universal'?'selected':''}>Universal Event</option>
+            </select>
 
             <div class="form-row">
               <div>
                 <label>Client</label>
                 <select id="ag-client">
-                  ${clients.map(c =>
-                    `<option value="${c.id}" ${c.id===ag.client_id?'selected':''}>${esc(c.name)}</option>`
-                  ).join('')}
+                  ${clients.map(c => `<option value="${c.id}" ${c.id===ag.client_id?'selected':''}>${esc(c.name)}</option>`).join('')}
                 </select>
               </div>
               <div>
-                <label>Project</label>
+                <label>Project (optional)</label>
                 <select id="ag-project">
-                  <option value="">— none (client-level) —</option>
-                  ${projects.map(p =>
-                    `<option value="${p.id}" data-client="${p.client_id}" ${p.id===ag.project_id?'selected':''}>${esc(p.name)}</option>`
-                  ).join('')}
+                  <option value="">— none —</option>
+                  ${projects.map(p => `<option value="${p.id}" data-client="${p.client_id}" ${p.id===ag.project_id?'selected':''}>${esc(p.name)}</option>`).join('')}
                 </select>
               </div>
             </div>
 
-            <div class="form-row">
-              <div><label>Venue</label><input id="ag-venue" type="text" value="${esc(S.venue).replace(/"/g,'&quot;')}"></div>
-              <div><label>Deliverables</label><input id="ag-deliv" type="text" placeholder="e.g. 500 edited photos, 1 album" value="${esc(S.deliverables).replace(/"/g,'&quot;')}"></div>
+            <div class="form-row form-row-3">
+              <div><label>Date</label><input id="ag-date" type="date" value="${ag.agreement_date || todayISO()}"></div>
+              <div><label>Venue</label><input id="ag-venue" type="text" value="${esc(meta.venue || ag.project?.venue_name || '')}"></div>
+              <div><label>Deliverables (Photos)</label><input id="ag-photos" type="text" placeholder="e.g. 500" value="${esc(meta.photos || '')}"></div>
+            </div>
+            
+            <div class="form-row form-row-3">
+              <div><label>Deliverables (Videos)</label><input id="ag-videos" type="text" placeholder="e.g. 1 highlight reel" value="${esc(meta.videos || '')}"></div>
+              <div></div><div></div>
             </div>
 
             <div class="form-row form-row-3">
-              <div><label>Total</label><input id="ag-total" type="number" min="0" step="0.01" value="${S.total}"></div>
-              <div><label>Advance</label><input id="ag-adv" type="number" min="0" step="0.01" value="${S.advance}"></div>
-              <div><label>Balance</label><div id="ag-balance" style="padding:10px 11px;background:#f3f4f6;border-radius:6px;font-weight:600;font-variant-numeric:tabular-nums">${fmtMoney(S.balance)}</div></div>
+              <div><label>Total Amount</label><input id="ag-total" type="number" value="${ag.total_amount || 0}"></div>
+              <div><label>Advance Paid</label><input id="ag-adv" type="number" value="${ag.advance_amount || 0}"></div>
+              <div>
+                <label>Balance</label>
+                <div id="ag-balance" style="padding:10px;background:#f3f4f6;border-radius:6px;font-weight:bold">
+                  ${fmtMoney((ag.total_amount||0) - (ag.advance_amount||0))}
+                </div>
+              </div>
             </div>
 
-            <label>Body (edit text, use placeholders)</label>
-            <textarea id="ag-body" style="min-height:260px;font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.5">${esc(S.body)}</textarea>
-            <p class="hint">Placeholders: <code>{{client_name}}</code> <code>{{client_phone}}</code> <code>{{client_address}}</code> <code>{{project_name}}</code> <code>{{project_date}}</code> <code>{{venue}}</code> <code>{{total_amount}}</code> <code>{{advance_amount}}</code> <code>{{balance_amount}}</code> <code>{{deliverables}}</code> <code>{{studio_name}}</code> <code>{{studio_phone}}</code> <code>{{studio_address}}</code> <code>{{agreement_no}}</code> <code>{{agreement_date}}</code></p>
+            <hr style="margin:20px 0">
 
-            <label>Internal Notes (not printed)</label>
-            <textarea id="ag-notes" style="min-height:60px">${esc(ag.notes || '')}</textarea>
+            <div class="flex-between mb-2">
+              <h3 style="margin:0">Custom Clauses</h3>
+              <button type="button" id="ag-add-clause" class="btn-secondary btn-sm">+ Add Clause</button>
+            </div>
+            <div id="ag-clauses-list"></div>
 
-            <hr>
-            <h3>Signed Copy</h3>
-            <div class="form-row">
-              <div><label>Signed On</label><input id="ag-signed-on" type="date" value="${ag.signed_on || ''}"></div>
-              <div><label>Scan URL (paste link)</label><input id="ag-signed-url" type="url" placeholder="https://drive.google.com/… or Supabase Storage URL" value="${esc(ag.signed_copy_url || '').replace(/"/g,'&quot;')}"></div>
-            </div>
-
-            <hr>
-            <div class="btn-group mb-2">
-              <button id="ag-save">Save</button>
-              <button id="ag-print" class="btn-secondary">🖨 Generate PDF</button>
-            </div>
-            <div class="btn-group mb-2">
-              <button id="ag-wa"    class="btn-success">📱 Send WhatsApp</button>
-              <button id="ag-email" class="btn-secondary">✉ Send Email</button>
-            </div>
-            <div class="btn-group">
-              <button id="ag-status-generated" class="btn-secondary btn-sm">Mark Generated</button>
-              <button id="ag-status-sent"      class="btn-secondary btn-sm">Mark Sent</button>
-              <button id="ag-status-signed"    class="btn-success btn-sm">Mark Signed</button>
-              <button id="ag-status-archived"  class="btn-secondary btn-sm">Archive</button>
+            <div class="btn-group mt-2">
+              <button id="ag-save">Save Agreement</button>
+              <button id="ag-print" class="btn-success">🖨 Generate PDF</button>
             </div>
             <p id="ag-error" class="error"></p>
           </div>
-
-          ${versions.length ? `
-            <div class="card">
-              <h3>Version History</h3>
-              <table class="small">
-                <thead><tr><th>Version</th><th>Saved</th></tr></thead>
-                <tbody>
-                  ${versions.map(v => `<tr>
-                    <td>v${v.version_no}</td>
-                    <td>${new Date(v.edited_at).toLocaleString('en-GB')}</td>
-                  </tr>`).join('')}
-                </tbody>
-              </table>
-            </div>
-          ` : ''}
         </div>
 
-        <!-- RIGHT: LIVE A4 PREVIEW -->
+        <!-- RIGHT PANEL: A4 PREVIEW -->
         <div>
-          <div class="card" style="position:sticky;top:20px">
-            <div class="flex-between mb-2">
-              <h3 style="margin:0">Live Preview</h3>
-              <span class="muted small">A4 · ${esc(studio.currency || '')}</span>
-            </div>
+          <div class="card" style="position:sticky;top:20px;padding:10px;background:#e5e7eb">
             <div id="print-area" style="
-              width:100%;max-width:210mm;min-height:297mm;
-              background:#fff;padding:32px 40px;
-              box-shadow:0 2px 12px rgba(0,0,0,.12);
-              position:relative;
-              font-family:'Times New Roman',Georgia,serif;
-              font-size:14px;line-height:1.7;
-              color:#111;
+              width:100%; max-width:210mm; min-height:297mm; background:#fff; padding:20mm;
+              box-shadow:0 4px 12px rgba(0,0,0,.15); position:relative;
+              font-family:'Times New Roman', Georgia, serif; font-size:13px; line-height:1.6; color:#111;
             ">
-              <div class="print-watermark" style="
-                position:absolute;top:50%;left:50%;
-                transform:translate(-50%,-50%) rotate(-30deg);
-                font-size:90px;color:rgba(0,0,0,.06);
-                font-weight:900;white-space:nowrap;
-                pointer-events:none;user-select:none;
-                z-index:0;font-family:system-ui,sans-serif;
-              ">${esc(studio.name)}</div>
+              <!-- Watermark -->
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:80px;color:rgba(0,0,0,.04);font-weight:900;white-space:nowrap;pointer-events:none;z-index:0;font-family:sans-serif">
+                ${esc(studio.name)}
+              </div>
 
-              <div id="print-content" style="position:relative;z-index:1;white-space:pre-wrap"></div>
-
-              <div style="position:relative;z-index:1;margin-top:40px;padding-top:24px;border-top:1px solid #ddd">
-                <div style="display:flex;justify-content:space-between;gap:20px">
-                  <div style="flex:1">
-                    <div style="font-size:11px;color:#666">For ${esc(studio.name)}</div>
-                    <div style="margin-top:30px;border-top:1px solid #000;padding-top:4px;font-size:11px">Signature / Stamp</div>
+              <!-- Document Content -->
+              <div style="position:relative;z-index:1">
+                
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px">
+                  <div>
+                    <h1 style="margin:0; font-size:24px">${esc(studio.name)}</h1>
+                    <div style="font-size:11px">${esc(studio.address || '')} · ${esc(studio.phone || '')}</div>
                   </div>
-                  <div style="flex:1">
-                    <div style="font-size:11px;color:#666">For the Client</div>
-                    <div style="margin-top:30px;border-top:1px solid #000;padding-top:4px;font-size:11px">Signature</div>
+                  <div style="text-align:right">
+                    <h2 style="margin:0; font-size:18px">AGREEMENT</h2>
+                    <div style="font-size:11px">Ref: ${esc(ag.agreement_no)}</div>
                   </div>
                 </div>
-                <div style="margin-top:20px;font-size:10px;color:#888;text-align:center">
-                  ${esc(ag.agreement_no)} · ${esc(studio.name)} · ${esc(studio.phone || '')}
+
+                <div id="print-intro" style="margin-bottom:20px; text-align:justify;"></div>
+
+                <h4 style="margin-bottom:8px; font-size:14px;">Scope of Work</h4>
+                <div id="print-scope" style="margin-bottom:20px; text-align:justify;"></div>
+
+                <h4 style="margin-bottom:8px; font-size:14px;">Financials</h4>
+                <table style="width:100%; font-size:13px; margin-bottom:20px; border-collapse:collapse;">
+                  <tr><td style="padding:4px 0">Total Fee:</td><td style="text-align:right">${esc(studio.currency || '')} <span id="print-total"></span></td></tr>
+                  <tr><td style="padding:4px 0">Advance Paid:</td><td style="text-align:right">${esc(studio.currency || '')} <span id="print-adv"></span></td></tr>
+                  <tr style="font-weight:bold; border-top:1px solid #ccc;"><td style="padding:4px 0">Balance Due:</td><td style="text-align:right">${esc(studio.currency || '')} <span id="print-bal"></span></td></tr>
+                </table>
+
+                <h4 style="margin-bottom:8px; font-size:14px;">Terms & Conditions</h4>
+                <ul id="print-clauses" style="padding-left:20px; margin-bottom:30px; font-size:12px;">
+                  <!-- Rendered via JS -->
+                </ul>
+
+                <!-- Signatures -->
+                <div style="margin-top:50px; display:flex; justify-content:space-between;">
+                  <div style="width:45%; text-align:center;">
+                    <div style="height:60px; position:relative;">
+                      ${studio.signature_url ? `<img src="${studio.signature_url}" style="max-height:60px; position:absolute; bottom:0; left:50%; transform:translateX(-50%);">` : ''}
+                      ${studio.stamp_url ? `<img src="${studio.stamp_url}" style="max-height:70px; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); opacity:0.7; mix-blend-mode:multiply;">` : ''}
+                    </div>
+                    <div style="border-top:1px solid #000; padding-top:5px; margin-top:10px;">For ${esc(studio.name)}</div>
+                  </div>
+                  <div style="width:45%; text-align:center;">
+                    <div style="height:60px;"></div>
+                    <div style="border-top:1px solid #000; padding-top:5px; margin-top:10px;">For the Client</div>
+                  </div>
                 </div>
+
               </div>
             </div>
           </div>
@@ -2305,171 +2255,154 @@ SCREENS.agreement = async function(el, id) {
       </div>
     `;
 
-    // ---- Live preview refresh ----
-    function refresh() {
-      const total   = Number(document.getElementById('ag-total').value || 0);
-      const advance = Number(document.getElementById('ag-adv').value   || 0);
-      const balance = total - advance;
-      document.getElementById('ag-balance').textContent = fmtMoney(balance);
-
-      const data = substitutionData();
-      const body = substitute(document.getElementById('ag-body').value, data);
-      document.getElementById('print-content').innerHTML =
-        esc(body).replace(/\n/g, '<br>');
-    }
-
-    // Wire up all inputs
-    ['ag-date','ag-venue','ag-deliv','ag-total','ag-adv','ag-body','ag-client','ag-project']
-      .forEach(id => document.getElementById(id).addEventListener('input', refresh));
-    ['ag-client','ag-project'].forEach(id =>
-      document.getElementById(id).addEventListener('change', refresh));
-
-    // Template change — replace body (with confirm)
-    document.getElementById('ag-tpl').onchange = e => {
-      const tplBody = e.target.selectedOptions[0]?.dataset.body || '';
-      if (!tplBody) return;
-      if (!confirm('Replace current body with this template\'s body? Unsaved changes will be lost.')) {
-        e.target.value = ag.template_id || e.target.value;
+    // 4. Logic & Rendering
+    function renderClausesInput() {
+      const wrap = document.getElementById('ag-clauses-list');
+      if (!customClauses.length) {
+        wrap.innerHTML = '<p class="muted small">No custom clauses added.</p>';
         return;
       }
-      document.getElementById('ag-body').value = tplBody;
-      refresh();
-    };
+      wrap.innerHTML = customClauses.map((c, i) => `
+        <div style="display:flex; gap:8px; margin-bottom:8px;">
+          <input type="text" class="clause-input" data-idx="${i}" value="${esc(c)}" placeholder="e.g. Raw files will not be provided." style="margin:0">
+          <button type="button" class="btn-danger btn-sm remove-clause" data-idx="${i}">✕</button>
+        </div>
+      `).join('');
 
-    // Client change — filter projects
-    document.getElementById('ag-client').onchange = () => {
-      const cid = document.getElementById('ag-client').value;
-      const projSel = document.getElementById('ag-project');
-      [...projSel.options].forEach(opt => {
-        if (!opt.value) return;
-        opt.style.display = (!cid || opt.dataset.client === cid) ? '' : 'none';
+      wrap.querySelectorAll('.clause-input').forEach(inp => {
+        inp.oninput = (e) => {
+          customClauses[e.target.dataset.idx] = e.target.value;
+          updatePreview();
+        };
       });
-      if (projSel.selectedOptions[0]?.style.display === 'none') projSel.value = '';
-      refresh();
-    };
-    document.getElementById('ag-client').dispatchEvent(new Event('change'));
+      wrap.querySelectorAll('.remove-clause').forEach(btn => {
+        btn.onclick = (e) => {
+          customClauses.splice(e.target.dataset.idx, 1);
+          renderClausesInput();
+          updatePreview();
+        };
+      });
+    }
 
-    // Auto-fill total from project when project picked (only if currently 0)
+    function updatePreview() {
+      const tplType = document.getElementById('ag-template-type').value;
+      const tpl = DOC_TEMPLATES[tplType];
+      
+      const dateVal = document.getElementById('ag-date').value;
+      const venueVal = document.getElementById('ag-venue').value;
+      const photoVal = document.getElementById('ag-photos').value || '—';
+      const videoVal = document.getElementById('ag-videos').value || '—';
+      const totalVal = Number(document.getElementById('ag-total').value || 0);
+      const advVal = Number(document.getElementById('ag-adv').value || 0);
+      const balVal = totalVal - advVal;
+
+      const clientId = document.getElementById('ag-client').value;
+      const client = clients.find(c => c.id === clientId) || {};
+      const projId = document.getElementById('ag-project').value;
+      const project = projects.find(p => p.id === projId) || {};
+
+      // Replace placeholders
+      const fill = (text) => {
+        return text
+          .replace(/{{date}}/g, fmtDate(dateVal))
+          .replace(/{{studio_name}}/g, studio.name)
+          .replace(/{{client_name}}/g, client.name || '')
+          .replace(/{{project_name}}/g, project.name || 'Event')
+          .replace(/{{venue}}/g, venueVal || '—')
+          .replace(/{{photos}}/g, photoVal)
+          .replace(/{{videos}}/g, videoVal);
+      };
+
+      document.getElementById('print-intro').innerHTML = fill(tpl.intro);
+      document.getElementById('print-scope').innerHTML = fill(tpl.scope);
+      
+      document.getElementById('ag-balance').textContent = fmtMoney(balVal);
+      document.getElementById('print-total').textContent = fmtMoney(totalVal);
+      document.getElementById('print-adv').textContent = fmtMoney(advVal);
+      document.getElementById('print-bal').textContent = fmtMoney(balVal);
+
+      // Render clauses in preview
+      const clWrap = document.getElementById('print-clauses');
+      const defaultClauses = [
+        "The Studio retains copyright of all images.",
+        "Final delivery will be provided within 30 days of the event.",
+        "Cancellation within 7 days of the event is non-refundable."
+      ];
+      const allClauses = [...defaultClauses, ...customClauses.filter(c => c.trim())];
+      
+      clWrap.innerHTML = allClauses.map(c => `<li>${esc(c)}</li>`).join('');
+    }
+
+    // 5. Wire events
+    ['ag-template-type','ag-date','ag-venue','ag-photos','ag-videos','ag-total','ag-adv','ag-client','ag-project'].forEach(id => {
+      document.getElementById(id).addEventListener('input', updatePreview);
+      document.getElementById(id).addEventListener('change', updatePreview);
+    });
+
+    document.getElementById('ag-add-clause').onclick = () => {
+      customClauses.push('');
+      renderClausesInput();
+    };
+
+    // Auto-fill project data
     document.getElementById('ag-project').addEventListener('change', e => {
       const pid = e.target.value;
       if (!pid) return;
       const p = projects.find(x => x.id === pid);
-      if (p && Number(document.getElementById('ag-total').value || 0) === 0) {
-        document.getElementById('ag-total').value = p.confirmed_amount || 0;
+      if (p) {
+        document.getElementById('ag-client').value = p.client_id;
+        if (!document.getElementById('ag-venue').value) document.getElementById('ag-venue').value = p.venue_name || '';
+        if (Number(document.getElementById('ag-total').value) === 0) document.getElementById('ag-total').value = p.confirmed_amount || 0;
       }
-      if (p && !document.getElementById('ag-venue').value) {
-        document.getElementById('ag-venue').value = p.venue_name || '';
-      }
-      refresh();
+      updatePreview();
     });
 
-    refresh();
+    // Save
+    document.getElementById('ag-save').onclick = async () => {
+      const btn = document.getElementById('ag-save');
+      const err = document.getElementById('ag-error');
+      btn.disabled = true; btn.textContent = 'Saving...'; err.textContent = '';
 
-    // ---- SAVE ----
-    async function save(newStatus) {
-      const errBox = document.getElementById('ag-error');
-      errBox.textContent = '';
-
-      const newBody = document.getElementById('ag-body').value;
       const payload = {
-        agreement_date:    document.getElementById('ag-date').value || null,
-        body_rendered:     newBody,
-        total_amount:      Number(document.getElementById('ag-total').value || 0),
-        advance_amount:    Number(document.getElementById('ag-adv').value   || 0),
-        balance_amount:    Number(document.getElementById('ag-total').value || 0)
-                          - Number(document.getElementById('ag-adv').value   || 0),
-        status:            newStatus || ag.status,
-        signed_on:         document.getElementById('ag-signed-on').value  || null,
-        signed_copy_url:   document.getElementById('ag-signed-url').value.trim() || null,
-        notes:             document.getElementById('ag-notes').value.trim() || null,
+        client_id: document.getElementById('ag-client').value,
+        project_id: document.getElementById('ag-project').value || null,
+        agreement_date: document.getElementById('ag-date').value,
+        total_amount: Number(document.getElementById('ag-total').value),
+        advance_amount: Number(document.getElementById('ag-adv').value),
+        balance_amount: Number(document.getElementById('ag-total').value) - Number(document.getElementById('ag-adv').value),
         metadata: {
-          venue:        document.getElementById('ag-venue').value.trim(),
-          deliverables: document.getElementById('ag-deliv').value.trim(),
-        },
-        project_id:        document.getElementById('ag-project').value || null,
+          template: document.getElementById('ag-template-type').value,
+          venue: document.getElementById('ag-venue').value,
+          photos: document.getElementById('ag-photos').value,
+          videos: document.getElementById('ag-videos').value,
+          clauses: customClauses
+        }
       };
 
       try {
-        // Snapshot version if body changed
-        if (ag.body_rendered !== newBody) {
-          const { data: maxVer } = await db.from('agreement_versions')
-            .select('version_no').eq('agreement_id', id)
-            .order('version_no', { ascending: false }).limit(1).maybeSingle();
-          const nextVer = (maxVer?.version_no || 0) + 1;
-          await db.from('agreement_versions').insert({
-            agreement_id:   id,
-            version_no:     nextVer,
-            body_rendered:  ag.body_rendered,
-            total_amount:   ag.total_amount,
-            advance_amount: ag.advance_amount,
-            balance_amount: ag.balance_amount,
-            edited_by:      CURRENT_PROFILE.id,
-          });
-        }
-
         const { error } = await db.from('agreements').update(payload).eq('id', id);
         if (error) throw error;
-
-        // Reset local state so next save doesn't snapshot again
-        ag.body_rendered  = newBody;
-        ag.total_amount   = payload.total_amount;
-        ag.advance_amount = payload.advance_amount;
-        ag.balance_amount = payload.balance_amount;
-
-        if (newStatus) {
-          SCREENS.agreement(el, id);   // reload to show new status + versions
-        }
-      } catch (err) {
-        errBox.textContent = err.message;
-        throw err;
+        alert('Agreement saved successfully!');
+      } catch(e) {
+        err.textContent = e.message;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save Agreement';
       }
-    }
-
-    document.getElementById('ag-save').onclick = async () => {
-      try { await save(null); alert('Saved.'); } catch {}
     };
 
-    ['generated','sent','signed','archived'].forEach(st => {
-      const btn = document.getElementById('ag-status-' + st);
-      if (btn) btn.onclick = async () => {
-        try { await save(st); } catch {}
-      };
-    });
-
-    // ---- PRINT ----
+    // Print
     document.getElementById('ag-print').onclick = () => {
-      refresh();
-      setTimeout(() => window.print(), 100);
+      window.print();
     };
 
-    // ---- WHATSAPP ----
-    document.getElementById('ag-wa').onclick = () => {
-      const client = clients.find(c => c.id === document.getElementById('ag-client').value);
-      if (!client?.phone) { alert('Client has no phone number. Add one in the Clients screen first.'); return; }
-      const digits = client.phone.replace(/\D/g, '');
-      if (digits.length < 8) { alert('Client phone too short. Fix it in Clients screen.'); return; }
-      const total   = fmtMoney(document.getElementById('ag-total').value);
-      const advance = fmtMoney(document.getElementById('ag-adv').value);
-      const proj    = projects.find(p => p.id === document.getElementById('ag-project').value);
-      const msg = `Dear ${client.name},\n\nPlease find attached agreement ${ag.agreement_no} for ${proj?.name || 'our service'}.\n\nTotal: ${total}\nAdvance: ${advance}\n\nKindly review and sign.\n\n— ${studio.name}${studio.phone ? ' · ' + studio.phone : ''}`;
-      window.open(`https://wa.me/${digits}?text=${encodeURIComponent(msg)}`, '_blank');
-    };
-
-    // ---- EMAIL ----
-    document.getElementById('ag-email').onclick = () => {
-      const client = clients.find(c => c.id === document.getElementById('ag-client').value);
-      if (!client?.email) { alert('Client has no email address. Add one in Clients screen.'); return; }
-      const proj = projects.find(p => p.id === document.getElementById('ag-project').value);
-      const subj = `Agreement ${ag.agreement_no} — ${studio.name}`;
-      const body = `Dear ${client.name},\n\nPlease find attached agreement ${ag.agreement_no}${proj ? ' for ' + proj.name : ''}.\n\nTotal: ${fmtMoney(document.getElementById('ag-total').value)}\nAdvance: ${fmtMoney(document.getElementById('ag-adv').value)}\n\nKindly review and sign at your earliest convenience.\n\nBest regards,\n${studio.name}\n${studio.phone || ''}\n${studio.email || ''}`;
-      window.location.href = `mailto:${encodeURIComponent(client.email)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body)}`;
-    };
+    // Initial render
+    renderClausesInput();
+    updatePreview();
 
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
 };
-
 // =====================================================================
 // BLOCK 6A — Gadgets + Invoices + Payments
 // =====================================================================
