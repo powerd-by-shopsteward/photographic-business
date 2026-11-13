@@ -2047,6 +2047,30 @@ async function openNewAgreementModal() {
 // =====================================================================
 // BLOCK 5B (NEW) — Smart Agreement Editor
 // =====================================================================
+const STANDARD_CLAUSES = [
+  // --- Universal / Payment ---
+  "The remaining balance must be paid in full upon delivery of the final edited files, prior to download.",
+  "Commercial usage rights are granted to the Client only upon full payment of the total fee.",
+  "A late fee of [X]% per week will be applied to overdue balances.",
+  
+  // --- Universal / Deliverables ---
+  "Final edited deliverables will be provided within [X] days of the event date.",
+  "The Client is entitled to [X] rounds of revisions. Additional revisions will incur a fee of [Rate] per round.",
+  "Unedited RAW files and original footage will not be provided to the Client. Only final edited deliverables are included.",
+  "The Studio retains full copyright and ownership of all images/videos. The Client is granted a personal-use license only.",
+
+  // --- Universal / Logistics ---
+  "The Client is responsible for obtaining any necessary permits, location releases, or permissions required for the shoot.",
+  "Any travel, accommodation, or transport costs outside the studio's base city limits are to be borne by the Client.",
+  "The Client agrees to provide meals and drinking water for the photography crew during the event.",
+  "Any additional hours required beyond the agreed timeframe will be billed at an overtime rate of [Rate]/hour.",
+  
+  // --- Wedding / Event Specific ---
+  "The advance payment is strictly non-refundable if the event is cancelled within 7 days of the scheduled date.",
+  "The Client may reschedule the event once without penalty, provided at least 14 days' notice is given.",
+  "While the Studio takes utmost care, they are not liable for missed moments due to venue restrictions, acts of God, or sudden equipment failure."
+];
+
 
 // 1. Built-in Templates
 const DOC_TEMPLATES = {
@@ -2148,13 +2172,21 @@ SCREENS.agreement = async function(el, id) {
               </div>
             </div>
 
-            <hr style="margin:20px 0">
+                       <hr style="margin:20px 0">
+
+            <h3 style="margin-bottom:10px">Terms & Conditions</h3>
+            
+            <label>Add Pre-made Clause</label>
+            <select id="ag-clause-dropdown" style="margin-bottom:16px; background:#f0fdf4; border-color:#bbf7d0;">
+              <option value="">-- Select a clause to add --</option>
+              ${STANDARD_CLAUSES.map((c, i) => `<option value="${i}">${c}</option>`).join('')}
+            </select>
 
             <div class="flex-between mb-2">
-              <h3 style="margin:0">Custom Clauses</h3>
-              <button type="button" id="ag-add-clause" class="btn-secondary btn-sm">+ Add Clause</button>
+              <label style="margin:0">Active Clauses (Click to edit text)</label>
+              <button type="button" id="ag-add-clause" class="btn-secondary btn-sm">+ Add Blank Clause</button>
             </div>
-            <div id="ag-clauses-list"></div>
+            <div id="ag-clauses-list" style="background:#f9fafb; padding:10px; border-radius:6px; border:1px solid #e5e7eb;"></div>
 
             <div class="btn-group mt-2">
               <button id="ag-save">Save Agreement</button>
@@ -2243,25 +2275,28 @@ SCREENS.agreement = async function(el, id) {
     `;
 
     // 4. Logic & Rendering
-    function renderClausesInput() {
+        function renderClausesInput() {
       const wrap = document.getElementById('ag-clauses-list');
       if (!customClauses.length) {
-        wrap.innerHTML = '<p class="muted small">No custom clauses added.</p>';
+        wrap.innerHTML = '<p class="muted small" style="margin:0">No clauses selected yet. Choose from the dropdown above.</p>';
         return;
       }
       wrap.innerHTML = customClauses.map((c, i) => `
-        <div style="display:flex; gap:8px; margin-bottom:8px;">
-          <input type="text" class="clause-input" data-idx="${i}" value="${esc(c)}" placeholder="e.g. Raw files will not be provided." style="margin:0">
-          <button type="button" class="btn-danger btn-sm remove-clause" data-idx="${i}">✕</button>
+        <div style="display:flex; gap:8px; margin-bottom:8px; align-items:flex-start;">
+          <textarea class="clause-input" data-idx="${i}" rows="2" style="flex:1; font-size:12px; padding:6px; margin:0; line-height:1.4; border:1px solid #d1d5db; border-radius:4px;" placeholder="Type custom clause here...">${esc(c)}</textarea>
+          <button type="button" class="btn-danger btn-sm remove-clause" data-idx="${i}" style="padding:6px 10px; margin-top:0;">✕</button>
         </div>
       `).join('');
 
+      // Allow editing the text directly
       wrap.querySelectorAll('.clause-input').forEach(inp => {
         inp.oninput = (e) => {
           customClauses[e.target.dataset.idx] = e.target.value;
           updatePreview();
         };
       });
+
+      // Delete button
       wrap.querySelectorAll('.remove-clause').forEach(btn => {
         btn.onclick = (e) => {
           customClauses.splice(e.target.dataset.idx, 1);
@@ -2270,7 +2305,6 @@ SCREENS.agreement = async function(el, id) {
         };
       });
     }
-
     function updatePreview() {
       const tplType = document.getElementById('ag-template-type').value;
       const tpl = DOC_TEMPLATES[tplType];
@@ -2329,6 +2363,18 @@ SCREENS.agreement = async function(el, id) {
     document.getElementById('ag-add-clause').onclick = () => {
       customClauses.push('');
       renderClausesInput();
+    };
+
+        document.getElementById('ag-clause-dropdown').onchange = (e) => {
+      const idx = e.target.value;
+      if (idx === '') return;
+      const text = STANDARD_CLAUSES[idx];
+      if (!customClauses.includes(text)) { // Prevent duplicates
+        customClauses.push(text);
+        renderClausesInput();
+        updatePreview();
+      }
+      e.target.value = ''; // Reset dropdown
     };
 
     // Auto-fill project data
