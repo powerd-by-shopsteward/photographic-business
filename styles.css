@@ -342,7 +342,6 @@ td.actions { text-align: right; white-space: nowrap; }
 @media print {
   body * { visibility: hidden; }
   
-  /* Target the A4 area */
   #print-area, #print-area * { visibility: visible; }
   
   #print-area {
@@ -350,21 +349,20 @@ td.actions { text-align: right; white-space: nowrap; }
     left: 0;
     top: 0;
     width: 210mm;
-    height: auto !important;
-    min-height: auto !important;
-    margin: 0;
+    height: 297mm;
     padding: 20mm;
+    box-sizing: border-box; /* THIS STOPS THE SHRINKING */
     background: #fff;
     box-shadow: none !important;
     border: none;
+    display: flex;
+    flex-direction: column;
   }
 
-  /* Hide UI elements that might sneak in */
   .sidebar, .topbar, .modal-backdrop, .btn-group, button {
     display: none !important;
   }
 
-  /* Force page size */
   @page { 
     margin: 0; 
     size: A4; 
