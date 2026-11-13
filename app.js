@@ -2094,7 +2094,7 @@ SCREENS.agreement = async function(el, id) {
     let customClauses = meta.clauses || [];
 
     // 3. Build Layout
-    el.innerHTML = `
+       el.innerHTML = `
       <div style="margin-bottom:12px"><a href="#agreements" class="small">← Back to Agreements</a></div>
       <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start">
         
@@ -2129,11 +2129,11 @@ SCREENS.agreement = async function(el, id) {
             <div class="form-row form-row-3">
               <div><label>Date</label><input id="ag-date" type="date" value="${ag.agreement_date || todayISO()}"></div>
               <div><label>Venue</label><input id="ag-venue" type="text" value="${esc(meta.venue || ag.project?.venue_name || '')}"></div>
-              <div><label>Deliverables (Photos)</label><input id="ag-photos" type="text" placeholder="e.g. 500" value="${esc(meta.photos || '')}"></div>
+              <div><label>Photos</label><input id="ag-photos" type="text" placeholder="e.g. 500" value="${esc(meta.photos || '')}"></div>
             </div>
             
             <div class="form-row form-row-3">
-              <div><label>Deliverables (Videos)</label><input id="ag-videos" type="text" placeholder="e.g. 1 highlight reel" value="${esc(meta.videos || '')}"></div>
+              <div><label>Videos</label><input id="ag-videos" type="text" placeholder="e.g. 1 highlight reel" value="${esc(meta.videos || '')}"></div>
               <div></div><div></div>
             </div>
 
@@ -2171,6 +2171,7 @@ SCREENS.agreement = async function(el, id) {
               width:100%; max-width:210mm; min-height:297mm; background:#fff; padding:20mm;
               box-shadow:0 4px 12px rgba(0,0,0,.15); position:relative;
               font-family:'Times New Roman', Georgia, serif; font-size:13px; line-height:1.6; color:#111;
+              display:flex; flex-direction:column; box-sizing:border-box;
             ">
               <!-- Watermark -->
               <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:80px;color:rgba(0,0,0,.04);font-weight:900;white-space:nowrap;pointer-events:none;z-index:0;font-family:sans-serif">
@@ -2178,7 +2179,7 @@ SCREENS.agreement = async function(el, id) {
               </div>
 
               <!-- Document Content -->
-              <div style="position:relative;z-index:1">
+              <div style="position:relative;z-index:1; flex-grow: 1;">
                 
                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px">
                   <div>
@@ -2208,22 +2209,33 @@ SCREENS.agreement = async function(el, id) {
                   <!-- Rendered via JS -->
                 </ul>
 
-                <!-- Signatures -->
-                <div style="margin-top:50px; display:flex; justify-content:space-between;">
-                  <div style="width:45%; text-align:center;">
-                    <div style="height:60px; position:relative;">
-                      ${studio.signature_url ? `<img src="${studio.signature_url}" style="max-height:60px; position:absolute; bottom:0; left:50%; transform:translateX(-50%);">` : ''}
-                      ${studio.stamp_url ? `<img src="${studio.stamp_url}" style="max-height:70px; position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); opacity:0.7; mix-blend-mode:multiply;">` : ''}
+              </div>
+
+              <!-- SIGNATURES (Pushed to bottom) -->
+              <div style="position:relative; z-index:1; margin-top:auto; padding-top:40px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                  
+                  <!-- Studio Signature & Stamp -->
+                  <div style="width:45%; text-align:center; position:relative;">
+                    <div style="height:70px; position:relative; display:flex; justify-content:center; align-items:flex-end;">
+                      <!-- Signature -->
+                      ${studio.signature_url ? `<img src="${studio.signature_url}" style="max-height:60px; z-index:2; position:relative;">` : ''}
+                      
+                      <!-- Stamp (Positioned nicely to the right of the signature) -->
+                      ${studio.stamp_url ? `<img src="${studio.stamp_url}" style="position:absolute; right:-10px; bottom:-10px; max-height:85px; opacity:0.85; mix-blend-mode:multiply; z-index:1;">` : ''}
                     </div>
                     <div style="border-top:1px solid #000; padding-top:5px; margin-top:10px;">For ${esc(studio.name)}</div>
                   </div>
+                  
+                  <!-- Client Signature -->
                   <div style="width:45%; text-align:center;">
-                    <div style="height:60px;"></div>
+                    <div style="height:70px;"></div>
                     <div style="border-top:1px solid #000; padding-top:5px; margin-top:10px;">For the Client</div>
                   </div>
-                </div>
 
+                </div>
               </div>
+
             </div>
           </div>
         </div>
