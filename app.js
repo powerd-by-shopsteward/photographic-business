@@ -2130,7 +2130,7 @@ SCREENS.agreement = async function(el, id) {
 
   try {
         // 2. Fetch Data
-    const [agRes, studioRes, clRes, prjRes, payRes] = await Promise.all([
+        const [agRes, studioRes, clRes, prjRes, payRes] = await Promise.all([
       db.from('agreements').select('*, client:clients(*), project:projects(*)').eq('id', id).single(),
       db.from('studio').select('*').single(),
       db.from('clients').select('id,name,phone,email,address').order('name'),
@@ -2145,6 +2145,11 @@ SCREENS.agreement = async function(el, id) {
     const projects = prjRes.data || [];
     const payments = payRes.data || [];
     const meta = ag.metadata || {};
+        const payments = payRes.data || [];
+    const receivedByProject = {};
+    payments.forEach(p => {
+      receivedByProject[p.project_id] = (receivedByProject[p.project_id] || 0) + Number(p.amount);
+    });
 
     // Calculate total received per project
     const receivedByProject = {};
@@ -2409,30 +2414,25 @@ SCREENS.agreement = async function(el, id) {
       e.target.value = ''; // Reset dropdown
     };
 
-       // Auto-fill project data
+           // Auto-fill project data
     document.getElementById('ag-project').addEventListener('change', e => {
       const pid = e.target.value;
       if (!pid) return;
       
       const p = projects.find(x => x.id === pid);
       if (p) {
-        // Set client
         document.getElementById('ag-client').value = p.client_id;
         
-        // Set venue
-        if (p.venue_name) {
+        if (p.venue_name && !document.getElementById('ag-venue').value) {
           document.getElementById('ag-venue').value = p.venue_name;
         }
         
-        // Auto-fill Financials from Project data
+        // Auto-fill financials every time a project is picked
         document.getElementById('ag-total').value = p.confirmed_amount || 0;
         document.getElementById('ag-adv').value = receivedByProject[pid] || 0;
       }
-      
-      // Trigger the live preview update
       updatePreview();
     });
-
         // Save
     document.getElementById('ag-save').onclick = async () => {
       const btn = document.getElementById('ag-save');
@@ -2479,8 +2479,9 @@ SCREENS.agreement = async function(el, id) {
       window.print();
     };
 
-    // Initial render
+       // Initial render
     renderClausesInput();
+    document.getElementById('ag-project').dispatchEvent(new Event('change'));
     updatePreview();
 
   } catch (err) {
