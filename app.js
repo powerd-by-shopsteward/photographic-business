@@ -2152,12 +2152,6 @@ SCREENS.agreement = async function(el, id) {
       receivedByProject[p.project_id] = (receivedByProject[p.project_id] || 0) + Number(p.amount);
     });
 
-    // Calculate total received per project
-    const receivedByProject = {};
-    payments.forEach(p => {
-      receivedByProject[p.project_id] = (receivedByProject[p.project_id] || 0) + Number(p.amount);
-    });
-
     // State for custom clauses
     let customClauses = meta.clauses || [];
 
