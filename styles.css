@@ -340,40 +340,49 @@ td.actions { text-align: right; white-space: nowrap; }
 
 /* ===== PRINT (for agreements / invoices → Save as PDF) ===== */
 @media print {
-  /* Hide the entire app interface */
-  body * { 
-    visibility: hidden; 
-  }
-  
-  /* Show ONLY the print area and its contents */
-  #print-area, #print-area * { 
-    visibility: visible; 
-  }
-  
-  /* Force the print area to be a perfect A4 page in the top left corner */
-  #print-area {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    margin: 0 !important;
-    padding: 20mm !important;
-    box-sizing: border-box !important;
+  /* 1. Force white background for the whole document */
+  html, body {
     background: #fff !important;
-    box-shadow: none !important;
-    border: none !important;
-    z-index: 99999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Hide UI elements that might sneak in */
-  .sidebar, .topbar, .modal-backdrop, .btn-group, button {
+  /* 2. Hide the sidebar, topbar, buttons, and the left form panel */
+  .sidebar, .topbar, button, .btn-group, #ag-layout > div:first-child {
     display: none !important;
   }
 
-  /* Force page size and remove default browser margins */
-  @page { 
-    margin: 0; 
-    size: A4; 
+  /* 3. Destroy the grid layout and sticky positioning on all parents */
+  .shell, .content, #screen-agreement, #ag-layout, #ag-layout > div, #ag-layout .card {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* 4. Force the exact A4 dimensions on the print area */
+  #print-area {
+    display: flex !important;
+    flex-direction: column !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    padding: 20mm !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    margin: 0 !important;
+    overflow: hidden !important; /* THIS STOPS THE 2ND BLANK PAGE */
+  }
+
+  /* 5. Force exact page size */
+  @page {
+    size: A4;
+    margin: 0;
   }
 }
