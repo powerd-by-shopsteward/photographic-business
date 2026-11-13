@@ -2343,15 +2343,9 @@ SCREENS.agreement = async function(el, id) {
       document.getElementById('print-bal').textContent = fmtMoney(balVal);
 
       // Render clauses in preview
+          // Render ONLY the clauses the user added or selected
       const clWrap = document.getElementById('print-clauses');
-      const defaultClauses = [
-        "The Studio retains copyright of all images.",
-        "Final delivery will be provided within 30 days of the event.",
-        "Cancellation within 7 days of the event is non-refundable."
-      ];
-      const allClauses = [...defaultClauses, ...customClauses.filter(c => c.trim())];
-      
-      clWrap.innerHTML = allClauses.map(c => `<li>${esc(c)}</li>`).join('');
+      clWrap.innerHTML = customClauses.map(c => `<li>${esc(c)}</li>`).join('');
     }
 
     // 5. Wire events
