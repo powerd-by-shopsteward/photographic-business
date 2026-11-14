@@ -1255,7 +1255,7 @@ SCREENS.project = async function(el, projectId) {
   const isOwner = CURRENT_PROFILE.role === 'owner';
 
   try {
-    const [pRes, pmRes, stRes, upRes, gRes, exRes, tmRes] = await Promise.all([
+    const [pRes, pmRes, stRes, upRes, gRes, exRes, tmRes, invRes, agrRes] = await Promise.all([
       db.from('projects').select('*, client:clients(name, phone, email)').eq('id', projectId).single(),
       db.from('project_members').select('*, team_member:team_members(name, phone, role)').eq('project_id', projectId).order('created_at'),
       db.from('project_stages').select('*').eq('project_id', projectId).order('sort_order'),
@@ -1264,6 +1264,10 @@ SCREENS.project = async function(el, projectId) {
       db.from('expenses').select('*').eq('project_id', projectId).order('date', {ascending:false}),
       isOwner ? db.from('team_members').select('id, name, role, default_rate').eq('active', true).order('name')
               : Promise.resolve({ data: [] }),
+      // Fetch linked invoices
+      db.from('invoices').select('id, invoice_no, total, issue_date, status').eq('project_id', projectId).order('created_at', {ascending: false}),
+      // Fetch linked agreements
+      db.from('agreements').select('id, agreement_no, status, agreement_date, total_amount').eq('project_id', projectId).order('created_at', {ascending: false})
     ]);
 
     if (pRes.error) throw pRes.error;
@@ -1275,6 +1279,8 @@ SCREENS.project = async function(el, projectId) {
     const gear    = gRes.data || [];
     const expenses= exRes.data || [];
     const allTeam = tmRes.data || [];
+    const linkedInvoices = invRes.data || [];
+    const linkedAgreements = agrRes.data || [];
 
     // Resolve update author names
     const userIds = [...new Set(updates.map(u => u.user_id).filter(Boolean))];
@@ -1317,7 +1323,10 @@ SCREENS.project = async function(el, projectId) {
               <div class="small mt-1"><strong>Your pay on this project:</strong> ${fmtMoney(myRow.pay_amount)}</div>
             ` : ''}
           </div>
-          <a href="#projects" class="small">← Back</a>
+          <div style="text-align:right;">
+            <a href="#projects" class="small" style="display:block; margin-bottom:8px;">← Back to Projects</a>
+            ${isOwner ? `<button id="btn-delete-project" class="btn-danger btn-sm">Delete Project</button>` : ''}
+          </div>
         </div>
       </div>
       <div class="tabs" id="ptabs">
@@ -1326,6 +1335,31 @@ SCREENS.project = async function(el, projectId) {
       </div>
       <div id="ptab"></div>
     `;
+
+    // Wire Delete Button
+    const delBtn = document.getElementById('btn-delete-project');
+    if (delBtn) {
+      delBtn.onclick = async () => {
+        // 1st Confirmation
+        if (!confirm(`WARNING: Deleting "${project.name}" will remove all associated data (team assignments, expenses, payments). Are you absolutely sure?`)) return;
+        
+        // 2nd Confirmation
+        if (!confirm(`FINAL WARNING: This action CANNOT be undone. Click OK to permanently delete this project.`)) return;
+
+        delBtn.disabled = true;
+        delBtn.textContent = 'Deleting...';
+        
+        const { error } = await db.from('projects').delete().eq('id', projectId);
+        if (error) {
+          alert("Error deleting project: " + error.message);
+          delBtn.disabled = false;
+          delBtn.textContent = 'Delete Project';
+        } else {
+          alert("Project deleted successfully.");
+          location.hash = '#projects';
+        }
+      };
+    }
 
     document.querySelectorAll('#ptabs button').forEach(b => {
       b.onclick = () => switchTab(b.dataset.tab);
@@ -1721,23 +1755,93 @@ SCREENS.project = async function(el, projectId) {
     function renderInvoices() {
       return `
         <div class="card">
-          <h2>Invoices</h2>
-          <p class="muted">Full invoice management is on the Invoices screen.</p>
-          <button onclick="location.hash='#invoices'">Go to Invoices →</button>
+          <div class="card-header">
+            <h2>Invoices (${linkedInvoices.length})</h2>
+            <button id="proj-new-invoice" class="btn-secondary">+ Create Invoice</button>
+          </div>
+          ${linkedInvoices.length ? `
+            <table>
+              <thead><tr><th>No.</th><th>Date</th><th class="num">Total</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                ${linkedInvoices.map(i => `
+                  <tr style="cursor:pointer" onclick="location.hash='#invoice/${i.id}'">
+                    <td><strong>${esc(i.invoice_no)}</strong></td>
+                    <td>${fmtDate(i.issue_date)}</td>
+                    <td class="num">${fmtMoney(i.total)}</td>
+                    <td><span class="${badgeClass(i.status)}">${i.status}</span></td>
+                    <td class="actions" onclick="event.stopPropagation()">
+                      <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p class="empty">No invoices for this project yet.</p>'}
         </div>`;
     }
-    function wireInvoices() {}
+    function wireInvoices() {
+      document.getElementById('proj-new-invoice').onclick = async () => {
+        // Create a draft invoice linked to this project
+        const { data, error } = await db.from('invoices').insert({
+          project_id: projectId,
+          invoice_no: 'DRAFT',
+          amount: 0, tax: 0, total: 0,
+          issue_date: todayISO(),
+          status: 'draft',
+          metadata: { items: [{ description: project.name, hsn: '', qty: 1, rate: project.confirmed_amount || 0 }], payment_mode: 'Bank Transfer', amount_words: '' }
+        }).select().single();
+
+        if (error) { alert(error.message); return; }
+        location.hash = '#invoice/' + data.id;
+      };
+    }
 
     // ============ AGREEMENT ============
     function renderAgreement() {
       return `
         <div class="card">
-          <h2>Agreement</h2>
-          <p class="muted">Create or manage this project's agreement on the Agreements screen.</p>
-          <button onclick="location.hash='#agreements'">Go to Agreements →</button>
+          <div class="card-header">
+            <h2>Agreements (${linkedAgreements.length})</h2>
+            <button id="proj-new-agreement" class="btn-secondary">+ Create Agreement</button>
+          </div>
+          ${linkedAgreements.length ? `
+            <table>
+              <thead><tr><th>No.</th><th>Date</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                ${linkedAgreements.map(a => `
+                  <tr style="cursor:pointer" onclick="location.hash='#agreement/${a.id}'">
+                    <td><strong>${esc(a.agreement_no)}</strong></td>
+                    <td>${fmtDate(a.agreement_date)}</td>
+                    <td class="num">${fmtMoney(a.total_amount)}</td>
+                    <td><span class="${badgeClass(a.status)}">${a.status}</span></td>
+                    <td class="actions" onclick="event.stopPropagation()">
+                      <button class="btn-secondary btn-sm" onclick="location.hash='#agreement/${a.id}'">Edit</button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : '<p class="empty">No agreements for this project yet.</p>'}
         </div>`;
     }
-    function wireAgreement() {}
+    function wireAgreement() {
+      document.getElementById('proj-new-agreement').onclick = async () => {
+        // Create a draft agreement linked to this project
+        const { data, error } = await db.from('agreements').insert({
+          client_id: project.client_id,
+          project_id: projectId,
+          title: 'New Agreement',
+          body_rendered: 'Draft',
+          total_amount: project.confirmed_amount || 0,
+          advance_amount: 0, balance_amount: project.confirmed_amount || 0,
+          status: 'draft',
+          created_by: CURRENT_PROFILE.id,
+        }).select().single();
+
+        if (error) { alert(error.message); return; }
+        location.hash = '#agreement/' + data.id;
+      };
+    }
 
     // ============ RELOAD ============
     function reloadProject() { SCREENS.project(el, projectId); }
