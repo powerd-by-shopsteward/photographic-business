@@ -3746,8 +3746,7 @@ SCREENS.profile = async function(el) {
         if (error) throw error;
         
         alert('Profile saved.');
-        
-       alert('Profile saved.');
+      
                 
                 // Update the top-left icon and sidebar name instantly
                 loadBrandName(); 
@@ -4617,9 +4616,8 @@ SCREENS.invoice = async function(el, id) {
       }
 
       document.getElementById('print-pmode').textContent = document.getElementById('inv-pmode').value;
-    }
       document.getElementById('print-contact-phone').textContent = document.getElementById('inv-contact').value;
-    
+    }
     document.getElementById('inv-pmode').oninput = updatePreview;
     document.getElementById('inv-tax').oninput = updatePreview;
     document.getElementById('inv-words').oninput = updatePreview;
