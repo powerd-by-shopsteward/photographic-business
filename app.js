@@ -1324,7 +1324,10 @@ SCREENS.project = async function(el, projectId) {
           </div>
           <div style="text-align:right;">
             <a href="#projects" class="small" style="display:block; margin-bottom:8px;">← Back to Projects</a>
-            ${isOwner ? `<button id="btn-delete-project" class="btn-danger btn-sm">Delete Project</button>` : ''}
+                        ${isOwner ? `
+              <button id="btn-edit-project" class="btn-secondary btn-sm" style="margin-right:8px;">Edit Project</button>
+              <button id="btn-delete-project" class="btn-danger btn-sm">Delete Project</button>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -1336,6 +1339,12 @@ SCREENS.project = async function(el, projectId) {
     `;
 
     // Wire Delete Button
+
+        // Wire Edit Button
+    const editBtn = document.getElementById('btn-edit-project');
+    if (editBtn) {
+      editBtn.onclick = () => openProjectForm(project);
+    }
     const delBtn = document.getElementById('btn-delete-project');
     if (delBtn) {
       delBtn.onclick = async () => {
