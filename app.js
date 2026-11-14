@@ -170,8 +170,7 @@ SCREENS.dashboard = async function(el) {
         .select('id, name, status, start_date, end_date, venue_name, client:clients(name)')
         .in('status', ['live', 'scheduled'])
         .order('start_date', { ascending: true }),
-      db.from('payments')
-        .select('amount').eq('direction', 'in').gte('date', monthStart),
+      db.from('payments').select('amount').eq('direction', 'in').gte('date', monthStart).not('project_id', 'is', null),
       db.from('projects').select('id, confirmed_amount'),
       db.from('payments').select('project_id, amount').eq('direction', 'in'),
     ]);
