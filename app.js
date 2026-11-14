@@ -2948,10 +2948,55 @@ SCREENS.invoices = async function(el) {
         const inv = invoices.find(x => x.id === b.dataset.iprint);
         if (inv) await printInvoice(inv);
       });
-      panel.querySelectorAll('[data-ipaid]').forEach(b => b.onclick = async () => {
-        const { error } = await db.from('invoices').update({ status: 'paid' }).eq('id', b.dataset.ipaid);
-        if (error) { alert(error.message); return; }
-        SCREENS.invoices(el);
+           panel.querySelectorAll('[data-ipaid]').forEach(b => b.onclick = async () => {
+        const invId = b.dataset.ipaid;
+        const inv = invoices.find(x => x.id === invId);
+        
+        if (!inv) return;
+        if (!inv.project_id) {
+          alert("Cannot record payment: This invoice is not linked to a project.");
+          return;
+        }
+
+        b.disabled = true;
+        b.textContent = 'Processing...';
+
+        try {
+          // 1. Find out how much has ALREADY been paid for this project
+          const { data: existingPayments } = await db.from('payments')
+            .select('amount')
+            .eq('project_id', inv.project_id)
+            .eq('direction', 'in');
+          
+          const totalPaidSoFar = (existingPayments || []).reduce((sum, p) => sum + Number(p.amount), 0);
+          
+          // 2. Calculate the remaining balance of the invoice
+          const remainingToPay = Number(inv.total) - totalPaidSoFar;
+
+          // 3. If money is owed, automatically record it in the ledger
+          if (remainingToPay > 0) {
+            const { data: { user } } = await db.auth.getUser();
+            await db.from('payments').insert({
+              project_id: inv.project_id,
+              direction: 'in',
+              type: 'client_final',
+              amount: remainingToPay,
+              date: todayISO(),
+              notes: 'Auto-recorded via Mark Paid button',
+              created_by: user.id
+            });
+          }
+
+          // 4. Change the invoice status to paid
+          await db.from('invoices').update({ status: 'paid' }).eq('id', invId);
+          
+          SCREENS.invoices(el); // Refresh the page
+
+        } catch (err) {
+          alert("Error recording payment: " + err.message);
+          b.disabled = false;
+          b.textContent = 'Mark Paid';
+        }
       });
       panel.querySelectorAll('[data-idel]').forEach(b => b.onclick = async () => {
         if (!confirm(`Delete invoice ${b.dataset.ino}?`)) return;
