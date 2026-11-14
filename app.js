@@ -2989,6 +2989,11 @@ SCREENS.invoices = async function(el) {
 
           // 4. Change the invoice status to paid
           await db.from('invoices').update({ status: 'paid' }).eq('id', invId);
+
+                    // Automatically mark the project as completed since it's fully paid
+          if (inv.project_id) {
+            await db.from('projects').update({ status: 'completed' }).eq('id', inv.project_id);
+          }
           
           SCREENS.invoices(el); // Refresh the page
 
