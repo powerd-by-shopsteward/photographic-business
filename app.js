@@ -3632,6 +3632,16 @@ SCREENS.profile = async function(el) {
             <div></div>
           </div>
 
+                    <hr>
+          <h3>Payment Details</h3>
+          <p class="hint">These will appear on your Invoices.</p>
+          <label>Bank Account No.</label>
+          <input id="pf3-bank-acc" type="text" value="${esc(studio.bank_account_no || '')}" placeholder="e.g. 50100234567890">
+          <div class="form-row">
+            <div><label>IFSC Code</label><input id="pf3-bank-ifsc" type="text" value="${esc(studio.bank_ifsc || '')}" placeholder="e.g. HDFC0001234"></div>
+            <div><label>UPI ID</label><input id="pf3-upi" type="text" value="${esc(studio.upi_id || '')}" placeholder="e.g. studio@okicici"></div>
+          </div>
+
                    <hr>
           <h3>Branding</h3>
           <p class="hint">Upload PNG or JPG images (max 2MB). These appear on invoices and agreements.</p>
@@ -3698,6 +3708,9 @@ SCREENS.profile = async function(el) {
           logo_url:   logoUrl,
           signature_url: signUrl,
           stamp_url:  stampUrl,
+          bank_account_no: document.getElementById('pf3-bank-acc').value.trim() || null,
+          bank_ifsc:       document.getElementById('pf3-bank-ifsc').value.trim() || null,
+          upi_id:          document.getElementById('pf3-upi').value.trim() || null,
         };
 
         const { error } = await db.from('studio').update(payload)
@@ -4281,6 +4294,9 @@ SCREENS.invoice = async function(el, id) {
       meta.items = [{ description: '', hsn: '', qty: 1, rate: 0 }];
     }
 
+    // Generate UPI QR Code link
+    const upiLink = studio.upi_id ? `upi://pay?pa=${encodeURIComponent(studio.upi_id)}&pn=${encodeURIComponent(studio.name)}` : '';
+
     el.innerHTML = `
       <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
         <a href="#invoices" class="small">← Back to Invoices</a>
@@ -4323,7 +4339,7 @@ SCREENS.invoice = async function(el, id) {
           </div>
           <div class="form-row">
             <div><label>Payment Mode</label><input id="inv-pmode" type="text" value="${esc(meta.payment_mode||'Bank Transfer')}"></div>
-            <div><label>Tax % (Optional)</label><input id="inv-tax" type="number" value="${inv.tax || 0}"></div>
+            <div><label>Tax %</label><input id="inv-tax" type="number" value="0"></div>
           </div>
 
           <hr style="margin:20px 0;">
@@ -4427,10 +4443,15 @@ SCREENS.invoice = async function(el, id) {
                     </div>
                     
                     <div style="display:flex; gap:15px; align-items:flex-start;">
-                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=upi://pay?pa=studio@upi" style="width:60px; height:60px; border:1px solid #ccc;">
+                      ${upiLink ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(upiLink)}" style="width:60px; height:60px; border:1px solid #ccc;">` : ''}
                       <div>
                         <div style="font-weight:bold; margin-bottom:2px;">Bank Transfer / Direct UPI</div>
-                        <div style="color:#666; font-size:10px;">${esc(studio.name)}<br>A/c: 123456789012<br>IFSC: SBIN0012345<br>UPI: ${esc(studio.email)}</div>
+                        <div style="color:#666; font-size:10px;">
+                          ${esc(studio.name)}<br>
+                          A/c: ${esc(studio.bank_account_no || '—')}<br>
+                          IFSC: ${esc(studio.bank_ifsc || '—')}<br>
+                          UPI: ${esc(studio.upi_id || '—')}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -4554,7 +4575,6 @@ SCREENS.invoice = async function(el, id) {
       const selectedOpt = projSel.selectedOptions[0];
       if (selectedOpt && selectedOpt.value) {
         const client = selectedOpt.dataset.client;
-        
         document.getElementById('print-client-name').textContent = client;
         document.getElementById('print-client-address').textContent = 'Address will appear here if saved in client profile.';
         document.getElementById('print-client-phone').textContent = '';
@@ -4601,12 +4621,13 @@ SCREENS.invoice = async function(el, id) {
         due_date: document.getElementById('inv-due').value || null,
         status: document.getElementById('inv-status').value,
         amount: subtotal,
-        tax: taxAmt,
+        tax: taxAmt, // Save actual tax amount to DB
         total: grandTotal,
         metadata: {
           items: meta.items,
           payment_mode: document.getElementById('inv-pmode').value,
-          amount_words: words
+          amount_words: words,
+          tax_pct: taxPct // Save the percentage here so it loads correctly next time
         }
       };
 
@@ -4625,6 +4646,12 @@ SCREENS.invoice = async function(el, id) {
     document.getElementById('inv-print').onclick = () => window.print();
 
     renderItems();
+    
+    // Set the tax input value correctly from metadata if it exists
+    if (meta.tax_pct) {
+      document.getElementById('inv-tax').value = meta.tax_pct;
+      updatePreview();
+    }
 
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
