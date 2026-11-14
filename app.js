@@ -4239,5 +4239,396 @@ async function loadBrandName() {
 // ===== START =====
 // =====================================================================
 
+// =====================================================================
+// BLOCK 6A-2 — FULL INVOICE EDITOR
+// =====================================================================
+
+// Helper for number to words
+function numberToWords(num) {
+  if (num === 0) return 'Zero';
+  const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+  const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+  num = num.toString().replace(/[\, ]/g,'');
+  if (num != parseFloat(num)) return 'not a number';
+  let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+  if (!n) return;
+  let str = '';
+  str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+  str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+  str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+  str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+  str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+  return str.trim() + ' Only';
+}
+
+SCREENS.invoice = async function(el, id) {
+  if (!id) { el.innerHTML = '<p class="error">No invoice selected</p>'; return; }
+  el.innerHTML = '<div class="loading">Loading invoice editor…</div>';
+
+  try {
+    const [invRes, studioRes, projRes] = await Promise.all([
+      db.from('invoices').select('*, project:projects(name, client:clients(*))').eq('id', id).single(),
+      db.from('studio').select('*').single(),
+      db.from('projects').select('id, name, confirmed_amount, client:clients(name)').order('name')
+    ]);
+    
+    if (invRes.error) throw invRes.error;
+    const inv = invRes.data;
+    const studio = studioRes.data || {};
+    const projects = projRes.data || [];
+    let meta = inv.metadata || {};
+    if (!meta.items || !meta.items.length) {
+      meta.items = [{ description: '', hsn: '', qty: 1, rate: 0 }];
+    }
+
+    el.innerHTML = `
+      <div style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <a href="#invoices" class="small">← Back to Invoices</a>
+        <div class="btn-group">
+          <button id="inv-save" class="btn-success">Save Invoice</button>
+          <button id="inv-print" class="btn-secondary">🖨 Print PDF</button>
+        </div>
+      </div>
+      
+      <div style="display:grid; grid-template-columns:minmax(0, 400px) minmax(0, 1fr); gap:20px; align-items:start;">
+        
+        <!-- LEFT PANEL: FORM -->
+        <div class="card">
+          <h2 style="margin-bottom:16px;">Invoice Setup</h2>
+          
+          <div class="form-row">
+            <div>
+              <label>Invoice No</label>
+              <input type="text" value="${esc(inv.invoice_no)}" disabled style="background:#f3f4f6;">
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="inv-status">
+                <option value="draft" ${inv.status==='draft'?'selected':''}>Draft</option>
+                <option value="sent" ${inv.status==='sent'?'selected':''}>Sent</option>
+                <option value="paid" ${inv.status==='paid'?'selected':''}>Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <label>Project / Client</label>
+          <select id="inv-project" style="margin-bottom:12px;">
+            <option value="">— select project —</option>
+            ${projects.map(p => `<option value="${p.id}" data-client="${p.client?.name||''}" data-amt="${p.confirmed_amount||0}" ${inv.project_id===p.id?'selected':''}>${esc(p.name)} (${esc(p.client?.name||'')})</option>`).join('')}
+          </select>
+
+          <div class="form-row">
+            <div><label>Issue Date</label><input id="inv-date" type="date" value="${inv.issue_date || todayISO()}"></div>
+            <div><label>Due Date</label><input id="inv-due" type="date" value="${inv.due_date || ''}"></div>
+          </div>
+          <div class="form-row">
+            <div><label>Payment Mode</label><input id="inv-pmode" type="text" value="${esc(meta.payment_mode||'Bank Transfer')}"></div>
+            <div><label>Tax % (Optional)</label><input id="inv-tax" type="number" value="${inv.tax || 0}"></div>
+          </div>
+
+          <hr style="margin:20px 0;">
+          
+          <div class="flex-between mb-2">
+            <h3 style="margin:0;">Line Items</h3>
+            <button type="button" id="inv-add-item" class="btn-secondary btn-sm">+ Add Item</button>
+          </div>
+          <div id="inv-items-list"></div>
+
+          <label class="mt-2">Amount in Words (Optional)</label>
+          <input id="inv-words" type="text" value="${esc(meta.amount_words||'')}" placeholder="Auto-generates if left blank">
+
+          <p id="inv-error" class="error mt-1"></p>
+        </div>
+
+        <!-- RIGHT PANEL: A4 PREVIEW -->
+        <div>
+          <div class="card" style="position:sticky; top:20px; padding:10px; background:#e5e7eb;">
+            <div id="print-area" style="
+              width:100%; max-width:210mm; min-height:297mm; background:#fff; padding:15mm;
+              box-shadow:0 4px 12px rgba(0,0,0,.15); position:relative;
+              font-family: Arial, Helvetica, sans-serif; font-size:12px; color:#333;
+              display:flex; flex-direction:column; box-sizing:border-box;
+            ">
+              
+              <!-- Header -->
+              <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ccc; padding-bottom:15px;">
+                <div style="display:flex; gap:15px;">
+                  ${studio.logo_url ? `<img src="${studio.logo_url}" style="max-height:60px; max-width:60px; object-fit:contain;">` : ''}
+                  <div>
+                    <h1 style="margin:0 0 5px 0; font-size:22px; color:#000;">${esc(studio.name)}</h1>
+                    <div style="color:#666; line-height:1.4;">
+                      ${esc(studio.address || '')}<br>
+                      ${esc(studio.email || '')} | ${esc(studio.phone || '')}
+                    </div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <h2 style="margin:0 0 5px 0; font-size:24px; letter-spacing:1px; color:#000;">TAX INVOICE</h2>
+                  <div style="color:#666; font-size:10px; margin-bottom:10px;">ORIGINAL FOR RECIPIENT</div>
+                  <div id="print-status" style="display:inline-block; padding:4px 10px; border:1px solid #059669; color:#059669; font-weight:bold; font-size:10px; border-radius:4px;">
+                    ${inv.status.toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Info Bar -->
+              <div style="display:flex; border-bottom:1px solid #ccc;">
+                <div style="flex:1; border-right:1px solid #ccc; padding:10px 0;">
+                  <div style="color:#888; font-size:10px;">Invoice No: <span style="color:#333; font-weight:bold;">${esc(inv.invoice_no)}</span></div>
+                  <div style="color:#888; font-size:10px; margin-top:5px;">Invoice Date: <span style="color:#333; font-weight:bold;">${fmtDate(inv.issue_date)}</span></div>
+                </div>
+                <div style="flex:1; padding:10px 0 10px 15px;">
+                  <div style="color:#888; font-size:10px;">Payment Mode: <span id="print-pmode" style="color:#333; font-weight:bold;"></span></div>
+                  <div style="color:#888; font-size:10px; margin-top:5px;">Place of Supply: <span style="color:#333; font-weight:bold;">${esc(studio.address ? studio.address.split(',').pop().trim() : '')}</span></div>
+                </div>
+              </div>
+
+              <!-- Bill To -->
+              <div style="display:flex; border-bottom:1px solid #ccc;">
+                <div style="flex:1; border-right:1px solid #ccc; padding:15px 0;">
+                  <div style="color:#888; font-size:10px; margin-bottom:5px;">BILLED TO (CLIENT):</div>
+                  <div id="print-client-name" style="font-weight:bold; font-size:14px; color:#000; margin-bottom:5px;"></div>
+                  <div id="print-client-address" style="color:#666;"></div>
+                  <div id="print-client-phone" style="color:#666; margin-top:5px;"></div>
+                </div>
+                <div style="flex:1; padding:15px 0 15px 15px;">
+                  <div style="color:#888; font-size:10px; margin-bottom:5px;">SHIPPED / SUPPLIED TO:</div>
+                  <div style="font-weight:bold; color:#000;">Same as Billing Address</div>
+                </div>
+              </div>
+
+              <!-- Items Table -->
+              <div style="flex-grow:1; margin-top:20px;">
+                <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                  <thead>
+                    <tr style="background:#000; color:#fff;">
+                      <th style="padding:8px; text-align:center; width:30px;">#</th>
+                      <th style="padding:8px; text-align:left;">Description of Service / Solution</th>
+                      <th style="padding:8px; text-align:center; width:60px;">HSN/SAC</th>
+                      <th style="padding:8px; text-align:center; width:50px;">Qty</th>
+                      <th style="padding:8px; text-align:right; width:80px;">Rate (₹)</th>
+                      <th style="padding:8px; text-align:right; width:90px;">Amount (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="print-items-body">
+                    <!-- Rows rendered via JS -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Totals & Footer -->
+              <div style="margin-top:20px; border-top:1px solid #ccc; padding-top:10px;">
+                
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                  <!-- Left side: Amount in words & Bank -->
+                  <div style="flex:1; padding-right:20px;">
+                    <div style="font-style:italic; margin-bottom:15px; color:#555;">
+                      Amount in Words: <strong id="print-words" style="color:#000;"></strong>
+                    </div>
+                    
+                    <div style="display:flex; gap:15px; align-items:flex-start;">
+                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=upi://pay?pa=studio@upi" style="width:60px; height:60px; border:1px solid #ccc;">
+                      <div>
+                        <div style="font-weight:bold; margin-bottom:2px;">Bank Transfer / Direct UPI</div>
+                        <div style="color:#666; font-size:10px;">${esc(studio.name)}<br>A/c: 123456789012<br>IFSC: SBIN0012345<br>UPI: ${esc(studio.email)}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Right side: Calculation -->
+                  <div style="width:250px;">
+                    <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                      <span style="color:#666;">Taxable Value</span>
+                      <span id="print-subtotal">₹0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                      <span style="color:#666;">Tax / GST</span>
+                      <span id="print-tax">₹0.00</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid #ccc; border-bottom:2px solid #333; font-weight:bold; font-size:14px; margin-top:5px;">
+                      <span>GRAND TOTAL</span>
+                      <span id="print-total">₹0.00</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Terms and Signature -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px;">
+                  <div style="flex:1; padding-right:20px; font-size:9px; color:#666;">
+                    <div style="font-weight:bold; color:#000; margin-bottom:4px;">Terms & Conditions</div>
+                    <ol style="padding-left:12px; margin:0;">
+                      <li>This invoice is generated electronically and does not require a physical signature.</li>
+                      <li>Payment is due within 7 days of the invoice date.</li>
+                      <li>For any queries, please contact ${esc(studio.phone || '')}.</li>
+                    </ol>
+                  </div>
+                  <div style="text-align:center; width:200px;">
+                    ${studio.signature_url ? `<img src="${studio.signature_url}" style="max-height:40px; margin-bottom:5px;">` : '<div style="height:40px;"></div>'}
+                    <div style="border-top:1px solid #000; padding-top:4px; font-size:10px;">
+                      <strong>AUTHORIZED SIGNATORY</strong><br>For ${esc(studio.name)}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    `;
+
+    // --- Logic ---
+
+    function renderItems() {
+      const list = document.getElementById('inv-items-list');
+      list.innerHTML = meta.items.map((item, i) => `
+        <div style="background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; padding:10px; margin-bottom:8px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <strong style="font-size:12px; color:#374151;">Item ${i+1}</strong>
+            <button type="button" class="btn-danger btn-sm" onclick="removeInvItem(${i})" style="padding:2px 6px; font-size:10px;">✕</button>
+          </div>
+          <input type="text" class="item-desc" data-idx="${i}" value="${esc(item.description)}" placeholder="Description of service" style="margin-bottom:6px; font-size:13px;">
+          <div style="display:grid; grid-template-columns:1fr 50px 80px; gap:6px;">
+            <input type="text" class="item-hsn" data-idx="${i}" value="${esc(item.hsn)}" placeholder="HSN/SAC" style="font-size:12px; margin:0;">
+            <input type="number" class="item-qty" data-idx="${i}" value="${item.qty}" placeholder="Qty" style="font-size:12px; margin:0;">
+            <input type="number" class="item-rate" data-idx="${i}" value="${item.rate}" placeholder="Rate" style="font-size:12px; margin:0;">
+          </div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.item-desc').forEach(inp => inp.oninput = e => { meta.items[e.target.dataset.idx].description = e.target.value; updatePreview(); });
+      list.querySelectorAll('.item-hsn').forEach(inp => inp.oninput = e => { meta.items[e.target.dataset.idx].hsn = e.target.value; updatePreview(); });
+      list.querySelectorAll('.item-qty').forEach(inp => inp.oninput = e => { meta.items[e.target.dataset.idx].qty = Number(e.target.value); updatePreview(); });
+      list.querySelectorAll('.item-rate').forEach(inp => inp.oninput = e => { meta.items[e.target.dataset.idx].rate = Number(e.target.value); updatePreview(); });
+      
+      updatePreview();
+    }
+
+    window.removeInvItem = function(idx) {
+      meta.items.splice(idx, 1);
+      renderItems();
+    };
+
+    document.getElementById('inv-add-item').onclick = () => {
+      meta.items.push({ description: '', hsn: '', qty: 1, rate: 0 });
+      renderItems();
+    };
+
+    function updatePreview() {
+      const tbody = document.getElementById('print-items-body');
+      let subtotal = 0;
+      
+      tbody.innerHTML = meta.items.map((item, i) => {
+        const amt = (item.qty || 0) * (item.rate || 0);
+        subtotal += amt;
+        return `
+          <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:8px; text-align:center; color:#666;">${i+1}</td>
+            <td style="padding:8px;">${esc(item.description)}</td>
+            <td style="padding:8px; text-align:center;">${esc(item.hsn)}</td>
+            <td style="padding:8px; text-align:center;">${item.qty}</td>
+            <td style="padding:8px; text-align:right;">${fmtMoney(item.rate)}</td>
+            <td style="padding:8px; text-align:right;">${fmtMoney(amt)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const taxPct = Number(document.getElementById('inv-tax').value || 0);
+      const taxAmt = subtotal * (taxPct / 100);
+      const grandTotal = subtotal + taxAmt;
+
+      document.getElementById('print-subtotal').textContent = '₹' + fmtMoney(subtotal);
+      document.getElementById('print-tax').textContent = '₹' + fmtMoney(taxAmt);
+      document.getElementById('print-total').textContent = '₹' + fmtMoney(grandTotal);
+
+      const wordsInp = document.getElementById('inv-words');
+      if (!wordsInp.value) {
+        document.getElementById('print-words').textContent = numberToWords(Math.round(grandTotal));
+      } else {
+        document.getElementById('print-words').textContent = wordsInp.value;
+      }
+
+      const projSel = document.getElementById('inv-project');
+      const selectedOpt = projSel.selectedOptions[0];
+      if (selectedOpt && selectedOpt.value) {
+        const client = selectedOpt.dataset.client;
+        
+        document.getElementById('print-client-name').textContent = client;
+        document.getElementById('print-client-address').textContent = 'Address will appear here if saved in client profile.';
+        document.getElementById('print-client-phone').textContent = '';
+      } else {
+        document.getElementById('print-client-name').textContent = '— Select a Project —';
+        document.getElementById('print-client-address').textContent = '';
+      }
+
+      document.getElementById('print-pmode').textContent = document.getElementById('inv-pmode').value;
+    }
+
+    document.getElementById('inv-pmode').oninput = updatePreview;
+    document.getElementById('inv-tax').oninput = updatePreview;
+    document.getElementById('inv-words').oninput = updatePreview;
+    document.getElementById('inv-status').onchange = (e) => {
+      document.getElementById('print-status').textContent = e.target.value.toUpperCase();
+    };
+    
+    document.getElementById('inv-project').onchange = (e) => {
+      const opt = e.target.selectedOptions[0];
+      if (opt.value && meta.items.length === 1 && meta.items[0].rate === 0) {
+        meta.items[0].description = opt.text.split(' (')[0];
+        meta.items[0].rate = Number(opt.dataset.amt);
+        renderItems();
+      } else {
+        updatePreview();
+      }
+    };
+
+    document.getElementById('inv-save').onclick = async () => {
+      const btn = document.getElementById('inv-save');
+      const err = document.getElementById('inv-error');
+      btn.disabled = true; btn.textContent = 'Saving...'; err.textContent = '';
+
+      let subtotal = meta.items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+      const taxPct = Number(document.getElementById('inv-tax').value || 0);
+      const taxAmt = subtotal * (taxPct / 100);
+      const grandTotal = subtotal + taxAmt;
+      const words = document.getElementById('inv-words').value || numberToWords(Math.round(grandTotal));
+
+      const payload = {
+        project_id: document.getElementById('inv-project').value || null,
+        issue_date: document.getElementById('inv-date').value,
+        due_date: document.getElementById('inv-due').value || null,
+        status: document.getElementById('inv-status').value,
+        amount: subtotal,
+        tax: taxAmt,
+        total: grandTotal,
+        metadata: {
+          items: meta.items,
+          payment_mode: document.getElementById('inv-pmode').value,
+          amount_words: words
+        }
+      };
+
+      try {
+        const { error } = await db.from('invoices').update(payload).eq('id', id);
+        if (error) throw error;
+        alert('Invoice saved successfully!');
+        location.hash = '#invoices';
+      } catch (e) {
+        err.textContent = e.message;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save Invoice';
+      }
+    };
+
+    document.getElementById('inv-print').onclick = () => window.print();
+
+    renderItems();
+
+  } catch (err) {
+    el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
+  }
+};
 
 bootApp();
