@@ -337,8 +337,7 @@ SCREENS.projects = async function(el) {
     `;
 
     // Wire up
-    document.getElementById('btn-new-project')
-      .addEventListener('click', openProjectForm);
+    document.getElementById('btn-new-project').addEventListener('click', () => openProjectForm());
 
     document.getElementById('proj-search').addEventListener('input', (e) => {
       PROJECTS_FILTER.search = e.target.value;
@@ -359,8 +358,16 @@ SCREENS.projects = async function(el) {
 // BLOCK 2C — New Project form
 // =====================================================================
 
-async function openProjectForm(existing = null) {
-  const isEdit = !!existing;
+async function openProjectForm(projectId = null) {
+  const isEdit = !!projectId;
+  let existing = null;
+
+  // Fetch the data if we are editing
+  if (isEdit) {
+    const { data, error } = await db.from('projects').select('*').eq('id', projectId).single();
+    if (error) { alert(error.message); return; }
+    existing = data;
+  }
 
   // 1) Load everything needed in parallel
   const [cRes, mRes, gRes, tRes, rRes] = await Promise.all([
@@ -1267,7 +1274,7 @@ SCREENS.project = async function(el, projectId) {
         // Wire Edit Button
     const editBtn = document.getElementById('btn-edit-project');
     if (editBtn) {
-      editBtn.onclick = () => openProjectForm(project);
+      editBtn.onclick = () => openProjectForm(projectId);
     }
     const delBtn = document.getElementById('btn-delete-project');
     if (delBtn) {
