@@ -3527,24 +3527,26 @@ SCREENS['studio-value'] = async function(el) {
     const equipmentValue = gadgets.reduce((s, g) =>
       s + Number(g.current_value || g.purchase_price || 0), 0);
 
-    // Receivable = confirmed across completed/live/scheduled - received
-    const receivedBy = {};
-    pays.filter(p => p.direction === 'in').forEach(p => {
-      receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0);
-    });
-    let receivable = 0;
-    proj.forEach(p => {
-      const paid = receivedBy[p.id] || 0;
-      receivable += Math.max(0, Number(p.confirmed_amount || 0) - paid);
-    });
-
-    // Pipeline = scheduled + live projects' confirmed amount
+    // Pipeline = scheduled + live projects' confirmed amount (This INCLUDES the unpaid receivable)
     const pipelineValue = proj
       .filter(p => p.status === 'scheduled' || p.status === 'live')
       .reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
 
     // Lifetime revenue/profit from completed projects
     const completedIds = new Set(proj.filter(p => p.status === 'completed').map(p => p.id));
+    
+    // Receivable = ONLY unpaid amounts from COMPLETED projects (active ones are already in pipeline)
+    const receivedBy = {};
+    pays.filter(p => p.direction === 'in').forEach(p => {
+      receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0);
+    });
+    
+    let pastReceivable = 0;
+    proj.filter(p => completedIds.has(p.id)).forEach(p => {
+      const paid = receivedBy[p.id] || 0;
+      pastReceivable += Math.max(0, Number(p.confirmed_amount || 0) - paid);
+    });
+
     const memberPayBy = {};
     pms.forEach(m => {
       if (m.status !== 'cancelled' && completedIds.has(m.project_id))
@@ -3565,7 +3567,8 @@ SCREENS['studio-value'] = async function(el) {
       lifetimeProfit  += rev - mp - ex;
     });
 
-    const totalStudioValue = equipmentValue + receivable + pipelineValue;
+    // FIXED FORMULA: Equipment + Past Revenue + Upcoming Pipeline
+    const totalStudioValue = equipmentValue + lifetimeRevenue + pipelineValue;
 
     el.innerHTML = `
       <div class="stat-grid">
@@ -3575,19 +3578,19 @@ SCREENS['studio-value'] = async function(el) {
           <div class="muted small">${gadgets.length} items</div>
         </div>
         <div class="stat">
-          <div class="label">Receivable</div>
-          <div class="value ${receivable>0?'neg':''}">${fmtMoney(receivable)}</div>
-          <div class="muted small">across ${proj.length} projects</div>
+          <div class="label">Lifetime Revenue</div>
+          <div class="value">${fmtMoney(lifetimeRevenue)}</div>
+          <div class="muted small">${completedIds.size} completed</div>
         </div>
         <div class="stat">
-          <div class="label">Pipeline</div>
+          <div class="label">Upcoming Pipeline</div>
           <div class="value pos">${fmtMoney(pipelineValue)}</div>
           <div class="muted small">scheduled + live</div>
         </div>
         <div class="stat">
-          <div class="label">Lifetime Revenue</div>
-          <div class="value">${fmtMoney(lifetimeRevenue)}</div>
-          <div class="muted small">${completedIds.size} completed</div>
+          <div class="label">Past Receivables</div>
+          <div class="value ${pastReceivable>0?'neg':''}">${fmtMoney(pastReceivable)}</div>
+          <div class="muted small">unpaid from completed</div>
         </div>
       </div>
 
@@ -3595,7 +3598,7 @@ SCREENS['studio-value'] = async function(el) {
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:2px">Total Studio Value</div>
           <div style="font-size:42px;font-weight:700;margin-top:8px">${fmtMoney(totalStudioValue)}</div>
-          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Receivable + Pipeline</div>
+          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Lifetime Revenue + Pipeline</div>
         </div>
       </div>
 
@@ -3608,13 +3611,12 @@ SCREENS['studio-value'] = async function(el) {
         </table>
       </div>
 
-      <p class="muted small">Equipment = sum of gadget current values. Receivable = confirmed − received per project. Pipeline = confirmed amount of scheduled + live projects. Keep your gadget values and project amounts updated for accurate numbers.</p>
+      <p class="muted small">Equipment = sum of gadget current values. Lifetime Revenue = total value of completed projects. Pipeline = confirmed amount of scheduled + live projects. Past Receivables are tracked separately so they aren't double-counted in the Total Value.</p>
     `;
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
 };
-
 // ============ PROFILE ============
 SCREENS.profile = async function(el) {
   el.innerHTML = '<div class="loading">Loading profile…</div>';
