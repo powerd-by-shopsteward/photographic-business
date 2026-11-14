@@ -68,9 +68,10 @@ function route() {
   const [name, param] = hash.split('/');
 
   // Map nested routes to their sidebar parent (for active highlight)
-  const SIDEBAR_MAP = {
+    const SIDEBAR_MAP = {
     'project':   'projects',
     'agreement': 'agreements',
+    'invoice':   'invoices',
   };
 
   // Explicit screen-level access rules
