@@ -577,23 +577,29 @@ async function openProjectForm(projectId = null) {
       });
     }
 
-    function renderMemberGear() {
+        function renderMemberGear() {
       const wrap = document.getElementById('pf-member-gear-wrap');
       const sel = S.members.filter(m => S.selMembers[m.id]);
       if (!sel.length) { wrap.innerHTML = ''; return; }
-      wrap.innerHTML = `
-        <label style="font-weight:600">Member's Own Gear</label>
-        <p class="hint">Optional — comma separated, e.g. "extra lens, gimbal"</p>
-        ${sel.map(m => `
+      
+      let html = '<label style="font-weight:600">Member\'s Own Gear</label>';
+      html += '<p class="hint">Optional — comma separated, e.g. "extra lens, gimbal"</p>';
+      
+      sel.forEach(m => {
+        const val = (S.memberGear[m.id] || '').replace(/"/g, '&quot;');
+        html += `
           <div style="margin-bottom:8px">
             <label class="small">${m.name}</label>
             <input type="text" class="pf-mem-gear" data-mid="${m.id}"
                    placeholder="Personal items"
-                   value="${(S.memberGear[m.id] || '').replace(/"/g,'&quot;')}"
+                   value="${val}"
                    style="margin-bottom:4px">
           </div>
-        `).join('')
-      `;
+        `;
+      });
+      
+      wrap.innerHTML = html;
+
       wrap.querySelectorAll('.pf-mem-gear').forEach(inp => {
         inp.oninput = e => { S.memberGear[e.target.dataset.mid] = e.target.value; };
       });
