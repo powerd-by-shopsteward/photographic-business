@@ -4341,6 +4341,11 @@ SCREENS.invoice = async function(el, id) {
             <div><label>Payment Mode</label><input id="inv-pmode" type="text" value="${esc(meta.payment_mode||'Bank Transfer')}"></div>
             <div><label>Tax %</label><input id="inv-tax" type="number" value="0"></div>
           </div>
+                     <div class="form-row">
+            <div><label>Contact No. (For Inquiries)</label><input id="inv-contact" type="text" value="${esc(meta.contact_phone || studio.phone || '')}"></div>
+            <div></div>
+          </div>
+          
 
           <hr style="margin:20px 0;">
           
@@ -4480,7 +4485,7 @@ SCREENS.invoice = async function(el, id) {
                     <ol style="padding-left:12px; margin:0;">
                       <li>This invoice is generated electronically and does not require a physical signature.</li>
                       <li>Payment is due within 7 days of the invoice date.</li>
-                      <li>For any queries, please contact ${esc(studio.phone || '')}.</li>
+                      <li>For any queries, please contact <span id="print-contact-phone">${esc(meta.contact_phone || studio.phone || '')}</span>.</li>
                     </ol>
                   </div>
                   <div style="text-align:center; width:200px;">
@@ -4585,10 +4590,12 @@ SCREENS.invoice = async function(el, id) {
 
       document.getElementById('print-pmode').textContent = document.getElementById('inv-pmode').value;
     }
-
+      document.getElementById('print-contact-phone').textContent = document.getElementById('inv-contact').value;
+    
     document.getElementById('inv-pmode').oninput = updatePreview;
     document.getElementById('inv-tax').oninput = updatePreview;
     document.getElementById('inv-words').oninput = updatePreview;
+        document.getElementById('inv-contact').oninput = updatePreview;
     document.getElementById('inv-status').onchange = (e) => {
       document.getElementById('print-status').textContent = e.target.value.toUpperCase();
     };
@@ -4627,7 +4634,8 @@ SCREENS.invoice = async function(el, id) {
           items: meta.items,
           payment_mode: document.getElementById('inv-pmode').value,
           amount_words: words,
-          tax_pct: taxPct // Save the percentage here so it loads correctly next time
+         tax_pct: taxPct,
+          contact_phone: document.getElementById('inv-contact').value // Save the percentage here so it loads correctly next time
         }
       };
 
