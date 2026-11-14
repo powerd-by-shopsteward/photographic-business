@@ -3560,7 +3560,7 @@ SCREENS['studio-value'] = async function(el) {
       db.from('projects').select('id,status,confirmed_amount'),
       db.from('payments').select('project_id,direction,amount'),
       db.from('expenses').select('project_id,amount'),
-      db.from('project_members').select('project_id,pay_amount,status'),
+      db.from('project_members').select('project_id,pay_amount,status')
     ]);
 
     const gadgets = gRes.data || [];
@@ -3569,73 +3569,68 @@ SCREENS['studio-value'] = async function(el) {
     const exps    = exRes.data || [];
     const pms     = pmRes.data || [];
 
+    // 1. Equipment (Stock) Value
     const equipmentValue = gadgets.reduce((s, g) =>
       s + Number(g.current_value || g.purchase_price || 0), 0);
 
-    // Pipeline = scheduled + live projects' confirmed amount (This INCLUDES the unpaid receivable)
-    const pipelineValue = proj
-      .filter(p => p.status === 'scheduled' || p.status === 'live')
-      .reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
+    // 2. Cash in Hand (Received minus Paid Out)
+    let totalIn = 0, totalOut = 0;
+    pays.forEach(p => {
+      if (p.direction === 'in') totalIn += Number(p.amount);
+      if (p.direction === 'out') totalOut += Number(p.amount);
+    });
+    const cashInHand = totalIn - totalOut;
 
-    // Lifetime revenue/profit from completed projects
+    // 3. Receivables (Unpaid confirmed amounts)
+    const totalConfirmed = proj.reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
+    const totalReceivable = Math.max(0, totalConfirmed - totalIn);
+
+    // 4. Lifetime Profit vs Pipeline
     const completedIds = new Set(proj.filter(p => p.status === 'completed').map(p => p.id));
+    const activeProjects = proj.filter(p => p.status === 'scheduled' || p.status === 'live');
     
-    // Receivable = ONLY unpaid amounts from COMPLETED projects (active ones are already in pipeline)
-    const receivedBy = {};
-    pays.filter(p => p.direction === 'in').forEach(p => {
-      receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0);
-    });
+    let lifetimeRevenue = 0;
+    let lifetimeExpenses = 0;
+    let lifetimeMemberPay = 0;
     
-    let pastReceivable = 0;
+    // Calculate ACTUAL profit (Deducting expenses and member pay)
     proj.filter(p => completedIds.has(p.id)).forEach(p => {
-      const paid = receivedBy[p.id] || 0;
-      pastReceivable += Math.max(0, Number(p.confirmed_amount || 0) - paid);
+      lifetimeRevenue += Number(p.confirmed_amount || 0);
+      
+      const pExps = exps.filter(e => e.project_id === p.id).reduce((s, e) => s + Number(e.amount), 0);
+      const pMems = pms.filter(m => m.project_id === p.id && m.status !== 'cancelled').reduce((s, m) => s + Number(m.pay_amount), 0);
+      
+      lifetimeExpenses += pExps;
+      lifetimeMemberPay += pMems;
     });
 
-    const memberPayBy = {};
-    pms.forEach(m => {
-      if (m.status !== 'cancelled' && completedIds.has(m.project_id))
-        memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0);
-    });
-    const expBy = {};
-    exps.forEach(e => {
-      if (completedIds.has(e.project_id))
-        expBy[e.project_id] = (expBy[e.project_id] || 0) + Number(e.amount || 0);
-    });
+    const lifetimeNetProfit = lifetimeRevenue - lifetimeExpenses - lifetimeMemberPay;
+    const pipelineValue = activeProjects.reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
 
-    let lifetimeRevenue = 0, lifetimeProfit = 0;
-    proj.filter(p => completedIds.has(p.id)).forEach(p => {
-      const rev    = Number(p.confirmed_amount || 0);
-      const mp     = memberPayBy[p.id] || 0;
-      const ex     = expBy[p.id] || 0;
-      lifetimeRevenue += rev;
-      lifetimeProfit  += rev - mp - ex;
-    });
-
-    // FIXED FORMULA: Equipment + Past Revenue + Upcoming Pipeline
-    const totalStudioValue = equipmentValue + lifetimeRevenue + pipelineValue;
+    // FIXED FORMULA: Equipment + True Net Profit + Active Pipeline
+    const totalStudioValue = equipmentValue + lifetimeNetProfit + pipelineValue;
 
     el.innerHTML = `
       <div class="stat-grid">
         <div class="stat">
-          <div class="label">Equipment</div>
+          <div class="label">Stock (Equipment)</div>
           <div class="value">${fmtMoney(equipmentValue)}</div>
           <div class="muted small">${gadgets.length} items</div>
         </div>
         <div class="stat">
-          <div class="label">Lifetime Revenue</div>
-          <div class="value">${fmtMoney(lifetimeRevenue)}</div>
-          <div class="muted small">${completedIds.size} completed</div>
+          <div class="label">Cash in Hand</div>
+          <div class="value pos">${fmtMoney(cashInHand)}</div>
+          <div class="muted small">actual bank balance</div>
         </div>
         <div class="stat">
-          <div class="label">Upcoming Pipeline</div>
+          <div class="label">Total Receivables</div>
+          <div class="value ${totalReceivable>0?'neg':''}">${fmtMoney(totalReceivable)}</div>
+          <div class="muted small">unpaid by clients</div>
+        </div>
+        <div class="stat">
+          <div class="label">Active Pipeline</div>
           <div class="value pos">${fmtMoney(pipelineValue)}</div>
-          <div class="muted small">scheduled + live</div>
-        </div>
-        <div class="stat">
-          <div class="label">Past Receivables</div>
-          <div class="value ${pastReceivable>0?'neg':''}">${fmtMoney(pastReceivable)}</div>
-          <div class="muted small">unpaid from completed</div>
+          <div class="muted small">${activeProjects.length} upcoming shoots</div>
         </div>
       </div>
 
@@ -3643,20 +3638,28 @@ SCREENS['studio-value'] = async function(el) {
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:2px">Total Studio Value</div>
           <div style="font-size:42px;font-weight:700;margin-top:8px">${fmtMoney(totalStudioValue)}</div>
-          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Lifetime Revenue + Pipeline</div>
+          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Net Profit + Pipeline</div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Lifetime Performance</h2>
+        <h2>Lifetime Performance (${completedIds.size} completed)</h2>
         <table>
-          <tr><th style="width:200px">Revenue (completed)</th><td class="num">${fmtMoney(lifetimeRevenue)}</td></tr>
-          <tr><th>Gross Profit (completed)</th><td class="num" style="color:${lifetimeProfit>=0?'#059669':'#dc2626'};font-weight:600">${fmtMoney(lifetimeProfit)}</td></tr>
-          <tr><th>Margin</th><td class="num">${lifetimeRevenue>0?(lifetimeProfit/lifetimeRevenue*100).toFixed(1):'0.0'}%</td></tr>
+          <tr><th style="width:200px">Gross Revenue</th><td class="num">${fmtMoney(lifetimeRevenue)}</td></tr>
+          <tr><th style="color:#dc2626;">Less: Expenses</th><td class="num" style="color:#dc2626;">- ${fmtMoney(lifetimeExpenses)}</td></tr>
+          <tr><th style="color:#dc2626;">Less: Member Payouts</th><td class="num" style="color:#dc2626;">- ${fmtMoney(lifetimeMemberPay)}</td></tr>
+          <tr style="border-top:1px solid #ccc; font-weight:bold;">
+            <th>Net Profit (Completed)</th><td class="num" style="color:#059669;">${fmtMoney(lifetimeNetProfit)}</td>
+          </tr>
         </table>
       </div>
 
-      <p class="muted small">Equipment = sum of gadget current values. Lifetime Revenue = total value of completed projects. Pipeline = confirmed amount of scheduled + live projects. Past Receivables are tracked separately so they aren't double-counted in the Total Value.</p>
+      <p class="muted small">
+        <strong>How this is calculated:</strong><br>
+        • <strong>Total Studio Value</strong> = The value of all your physical gear + money from completed shoots + money guaranteed from upcoming shoots.<br>
+        • <strong>Cash in Hand</strong> = Actual money in your bank (Received minus Paid Out).<br>
+        • <strong>Receivables</strong> = Money clients still owe you for both past and upcoming shoots.
+      </p>
     `;
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
