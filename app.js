@@ -3118,79 +3118,175 @@ async function printInvoice(inv) {
   const studio = studioRes.data || {};
   const full = fullInv.data || inv;
   const client = full.project?.client || {};
+  let meta = full.metadata || {};
+  
+  if (!meta.items || !meta.items.length) {
+    meta.items = [{ description: full.project?.name || 'Photography Services', hsn: '', qty: 1, rate: full.amount || 0 }];
+  }
 
-  const taxAmt = Number(full.tax || 0);
-  const total  = Number(full.total || 0);
-  const amount = Number(full.amount || 0);
+  let subtotal = meta.items.reduce((sum, item) => sum + (item.qty * item.rate), 0);
+  let taxPct = meta.tax_pct || 0;
+  let taxAmt = subtotal * (taxPct / 100);
+  let grandTotal = subtotal + taxAmt;
+  let words = meta.amount_words || numberToWords(Math.round(grandTotal));
+  let upiLink = studio.upi_id ? `upi://pay?pa=${encodeURIComponent(studio.upi_id)}&pn=${encodeURIComponent(studio.name)}` : '';
+  let contact = meta.contact_phone || studio.phone || '';
 
   const w = window.open('', '_blank');
   w.document.write(`
     <!DOCTYPE html><html><head><title>${esc(full.invoice_no)}</title>
     <style>
-      body { font-family: Georgia, 'Times New Roman', serif; color: #222; max-width: 210mm; margin: 0 auto; padding: 20mm; font-size: 13px; line-height: 1.6; }
-      h1 { font-size: 40px; color: #888; font-weight: 900; letter-spacing: 2px; margin: 0; }
-      .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #333; padding-bottom:20px; margin-bottom:30px; }
-      .studio-name { font-size: 22px; font-weight: bold; margin-bottom: 6px; }
-      .grid { display:flex; justify-content:space-between; margin-bottom:30px; gap:40px; }
-      .col { flex:1; }
-      .label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 1px; margin-bottom: 4px; }
-      table { width:100%; border-collapse:collapse; margin-bottom:30px; }
-      th { background:#f5f5f5; padding:12px; text-align:left; border-bottom:1px solid #ddd; }
-      td { padding:12px; border-bottom:1px solid #f0f0f0; }
-      .num { text-align: right; font-variant-numeric: tabular-nums; }
-      tfoot td { border-top: 2px solid #333; font-weight: bold; font-size: 15px; }
-      .footer { margin-top:40px; padding-top:20px; border-top:1px solid #ddd; font-size: 11px; color: #666; }
-      .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 140px; color: rgba(0,0,0,.04); font-weight: 900; white-space: nowrap; pointer-events: none; z-index: -1; font-family: system-ui, sans-serif; }
-      @media print { @page { margin: 0; size: A4; } }
+      body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { margin: 0; size: A4; }
+      .print-wrapper {
+        width: 210mm; min-height: 297mm; padding: 15mm; box-sizing: border-box;
+        font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #333; background: #fff;
+        display: flex; flex-direction: column; margin: 0 auto;
+      }
     </style></head>
     <body>
-      <div class="watermark">${esc(studio.name)}</div>
-      <div class="header">
-        <div>
-          <div class="studio-name">${esc(studio.name)}</div>
-          <div>${esc(studio.address || '')}</div>
-          <div>${esc(studio.phone || '')}${studio.email ? ' · ' + esc(studio.email) : ''}</div>
+      <div class="print-wrapper">
+        
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ccc; padding-bottom:15px;">
+          <div style="display:flex; gap:15px;">
+            ${studio.logo_url ? `<img src="${studio.logo_url}" style="max-height:60px; max-width:60px; object-fit:contain;">` : ''}
+            <div>
+              <h1 style="margin:0 0 5px 0; font-size:22px; color:#000;">${esc(studio.name)}</h1>
+              <div style="color:#666; line-height:1.4;">
+                ${esc(studio.address || '')}<br>
+                ${esc(studio.email || '')} | ${esc(studio.phone || '')}
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <h2 style="margin:0 0 5px 0; font-size:24px; letter-spacing:1px; color:#000;">TAX INVOICE</h2>
+            <div style="color:#666; font-size:10px; margin-bottom:10px;">ORIGINAL FOR RECIPIENT</div>
+            <div style="display:inline-block; padding:4px 10px; border:1px solid #059669; color:#059669; font-weight:bold; font-size:10px; border-radius:4px;">
+              ${full.status.toUpperCase()}
+            </div>
+          </div>
         </div>
-        <div style="text-align:right">
-          <h1>INVOICE</h1>
-          <div><strong>#${esc(full.invoice_no)}</strong></div>
-          <div style="margin-top:8px">Date: ${fmtDate(full.issue_date)}</div>
-          ${full.due_date ? `<div>Due: ${fmtDate(full.due_date)}</div>` : ''}
+
+        <!-- Info Bar -->
+        <div style="display:flex; border-bottom:1px solid #ccc;">
+          <div style="flex:1; border-right:1px solid #ccc; padding:10px 0;">
+            <div style="color:#888; font-size:10px;">Invoice No: <span style="color:#333; font-weight:bold;">${esc(full.invoice_no)}</span></div>
+            <div style="color:#888; font-size:10px; margin-top:5px;">Invoice Date: <span style="color:#333; font-weight:bold;">${fmtDate(full.issue_date)}</span></div>
+          </div>
+          <div style="flex:1; padding:10px 0 10px 15px;">
+            <div style="color:#888; font-size:10px;">Payment Mode: <span style="color:#333; font-weight:bold;">${esc(meta.payment_mode || 'Bank Transfer')}</span></div>
+            <div style="color:#888; font-size:10px; margin-top:5px;">Place of Supply: <span style="color:#333; font-weight:bold;">${esc(studio.address ? studio.address.split(',').pop().trim() : '')}</span></div>
+          </div>
         </div>
+
+        <!-- Bill To -->
+        <div style="display:flex; border-bottom:1px solid #ccc;">
+          <div style="flex:1; border-right:1px solid #ccc; padding:15px 0;">
+            <div style="color:#888; font-size:10px; margin-bottom:5px;">BILLED TO (CLIENT):</div>
+            <div style="font-weight:bold; font-size:14px; color:#000; margin-bottom:5px;">${esc(client.name || '—')}</div>
+            <div style="color:#666;">${esc(client.address || 'Address will appear here if saved in client profile.')}</div>
+            <div style="color:#666; margin-top:5px;">${esc(client.phone || '')}</div>
+          </div>
+          <div style="flex:1; padding:15px 0 15px 15px;">
+            <div style="color:#888; font-size:10px; margin-bottom:5px;">SHIPPED / SUPPLIED TO:</div>
+            <div style="font-weight:bold; color:#000;">Same as Billing Address</div>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <div style="flex-grow:1; margin-top:20px;">
+          <table style="width:100%; border-collapse:collapse; font-size:11px;">
+            <thead>
+              <tr style="background:#000; color:#fff;">
+                <th style="padding:8px; text-align:center; width:30px;">#</th>
+                <th style="padding:8px; text-align:left;">Description of Service / Solution</th>
+                <th style="padding:8px; text-align:center; width:60px;">HSN/SAC</th>
+                <th style="padding:8px; text-align:center; width:50px;">Qty</th>
+                <th style="padding:8px; text-align:right; width:80px;">Rate (₹)</th>
+                <th style="padding:8px; text-align:right; width:90px;">Amount (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${meta.items.map((item, i) => {
+                const amt = (item.qty || 0) * (item.rate || 0);
+                return `
+                  <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px; text-align:center; color:#666;">${i+1}</td>
+                    <td style="padding:8px;">${esc(item.description)}</td>
+                    <td style="padding:8px; text-align:center;">${esc(item.hsn)}</td>
+                    <td style="padding:8px; text-align:center;">${item.qty}</td>
+                    <td style="padding:8px; text-align:right;">${fmtMoney(item.rate)}</td>
+                    <td style="padding:8px; text-align:right;">${fmtMoney(amt)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Totals & Footer -->
+        <div style="margin-top:20px; border-top:1px solid #ccc; padding-top:10px;">
+          
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <!-- Left side: Amount in words & Bank -->
+            <div style="flex:1; padding-right:20px;">
+              <div style="font-style:italic; margin-bottom:15px; color:#555;">
+                Amount in Words: <strong style="color:#000;">${esc(words)}</strong>
+              </div>
+              
+              <div style="display:flex; gap:15px; align-items:flex-start;">
+                ${upiLink ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(upiLink)}" style="width:60px; height:60px; border:1px solid #ccc;">` : ''}
+                <div>
+                  <div style="font-weight:bold; margin-bottom:2px;">Bank Transfer / Direct UPI</div>
+                  <div style="color:#666; font-size:10px;">
+                    ${esc(studio.name)}<br>
+                    A/c: ${esc(studio.bank_account_no || '—')}<br>
+                    IFSC: ${esc(studio.bank_ifsc || '—')}<br>
+                    UPI: ${esc(studio.upi_id || '—')}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right side: Calculation -->
+            <div style="width:250px;">
+              <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                <span style="color:#666;">Taxable Value</span>
+                <span>₹${fmtMoney(subtotal)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:4px 0;">
+                <span style="color:#666;">Tax / GST</span>
+                <span>₹${fmtMoney(taxAmt)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:8px 0; border-top:1px solid #ccc; border-bottom:2px solid #333; font-weight:bold; font-size:14px; margin-top:5px;">
+                <span>GRAND TOTAL</span>
+                <span>₹${fmtMoney(grandTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Terms and Signature -->
+          <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:30px;">
+            <div style="flex:1; padding-right:20px; font-size:9px; color:#666;">
+              <div style="font-weight:bold; color:#000; margin-bottom:4px;">Terms & Conditions</div>
+              <ol style="padding-left:12px; margin:0;">
+                <li>This invoice is generated electronically and does not require a physical signature.</li>
+                <li>Payment is due within 7 days of the invoice date.</li>
+                <li>For any queries, please contact ${esc(contact)}.</li>
+              </ol>
+            </div>
+            <div style="text-align:center; width:200px;">
+              ${studio.signature_url ? `<img src="${studio.signature_url}" style="max-height:40px; margin-bottom:5px;">` : '<div style="height:40px;"></div>'}
+              <div style="border-top:1px solid #000; padding-top:4px; font-size:10px;">
+                <strong>AUTHORIZED SIGNATORY</strong><br>For ${esc(studio.name)}
+              </div>
+            </div>
+          </div>
+
+        </div>
+
       </div>
-
-      <div class="grid">
-        <div class="col">
-          <div class="label">Bill To</div>
-          <div><strong>${esc(client.name || '—')}</strong></div>
-          ${client.address ? `<div>${esc(client.address)}</div>` : ''}
-          ${client.phone ? `<div>${esc(client.phone)}</div>` : ''}
-          ${client.email ? `<div>${esc(client.email)}</div>` : ''}
-        </div>
-        <div class="col" style="text-align:right">
-          <div class="label">For Project</div>
-          <div><strong>${esc(full.project?.name || '—')}</strong></div>
-          ${full.project?.venue_name ? `<div>${esc(full.project.venue_name)}</div>` : ''}
-        </div>
-      </div>
-
-      <table>
-        <thead><tr><th>Description</th><th class="num">Amount</th></tr></thead>
-        <tbody>
-          <tr>
-            <td>Photography Services — ${esc(full.project?.name || 'Project')}</td>
-            <td class="num">${fmtMoney(amount)}</td>
-          </tr>
-          ${taxAmt ? `<tr><td>Tax</td><td class="num">${fmtMoney(taxAmt)}</td></tr>` : ''}
-        </tbody>
-        <tfoot>
-          <tr><td>Total Due</td><td class="num">${fmtMoney(total)}</td></tr>
-        </tfoot>
-      </table>
-
-      ${studio.bank_details ? `<div class="footer"><strong>Payment Details</strong><div>${esc(studio.bank_details)}</div></div>` : ''}
-      ${studio.invoice_payment_terms ? `<div class="footer"><strong>Terms</strong><div>${esc(studio.invoice_payment_terms)}</div></div>` : ''}
-      ${full.notes ? `<div class="footer"><strong>Notes</strong><div>${esc(full.notes)}</div></div>` : ''}
     </body></html>
   `);
   w.document.close();
