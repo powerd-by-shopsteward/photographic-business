@@ -15,9 +15,13 @@ body {
   color: #1e293b;
   font-size: 14px;
   
-  /* The Backdrop Image with a semi-transparent white overlay */
-  background: linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), 
-              url('images/backdrop.png') center/cover no-repeat fixed;
+  /* Separated properties so we can see exactly what's failing */
+  background-color: #f1f5f9;
+  background-image: linear-gradient(rgba(248, 250, 252, 0.2), rgba(248, 250, 252, 0.2)), url('images/backdrop.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 a { color: #2563eb; text-decoration: none; }
 a:hover { text-decoration: underline; }
