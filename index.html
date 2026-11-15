@@ -26,16 +26,28 @@
     <!-- ============ APP SHELL ============ -->
   <div id="app-shell" style="display:none">
 
-    <!-- Top Header -->
+       <!-- Top Header -->
     <header class="top-header">
-      <div class="header-left">
-        <img id="header-logo" src="" style="display:none; width:36px; height:36px; border-radius:50%; object-fit:cover;">
+      <div class="header-left"></div> <!-- Empty spacer to keep center perfect -->
+      
+      <div class="header-title">
         <h1 id="header-studio-name">Studio Name</h1>
       </div>
+
       <div class="header-right">
         <span id="user-name" class="user-name"></span>
-        <button id="profile-btn" class="icon-btn" title="Profile">👤</button>
-        <button id="settings-btn" class="icon-btn" title="Settings" data-role="owner">⚙️</button>
+        
+        <!-- Studio Logo as Profile Button -->
+        <button id="profile-btn" class="icon-btn" title="Profile">
+          <img id="header-profile-logo" src="" style="display:none;">
+          <span id="profile-fallback-emoji" style="font-size: 20px;">👤</span>
+        </button>
+
+        <!-- Custom Settings Icon -->
+        <button id="settings-btn" class="icon-btn" title="Settings" data-role="owner">
+          <img src="images/settings.png" style="width: 24px; height: 24px; object-fit: contain;">
+        </button>
+        
         <button id="logout-btn" class="logout-btn">Logout</button>
       </div>
     </header>
