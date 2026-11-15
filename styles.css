@@ -50,13 +50,43 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0; }
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px; z-index: 100;
 }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.header-left h1 { font-size: 20px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; margin: 0; }
-.header-right { display: flex; align-items: center; gap: 10px; }
+.header-left { flex: 1; } /* Pushes the center to the middle */
+.header-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  white-space: nowrap;
+}
+.header-title h1 {
+  font-size: 22px; 
+  font-weight: 800; 
+  color: #0f172a; 
+  letter-spacing: -0.5px; 
+  margin: 0;
+  text-transform: uppercase;
+}
+.header-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
 .user-name { font-size: 13px; color: #64748b; margin-right: 8px; }
-.icon-btn { background: transparent; font-size: 18px; padding: 6px 10px; color: #475569; border-radius: 50%; border: none; cursor: pointer; }
-.icon-btn:hover { background: #f1f5f9; color: #0f172a; }
-.logout-btn { background: #ef4444; color: #fff; font-size: 13px; padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer; }
+
+.icon-btn { 
+  background: transparent; border: none; cursor: pointer; 
+  display: flex; align-items: center; justify-content: center;
+  padding: 4px; border-radius: 50%; transition: background 0.15s;
+}
+.icon-btn:hover { background: #f1f5f9; }
+
+#header-profile-logo { 
+  width: 38px; height: 38px; 
+  border-radius: 50%; object-fit: cover; 
+  border: 2px solid #e2e8f0;
+}
+
+.logout-btn { 
+  background: #ef4444; color: #fff; font-size: 13px; 
+  padding: 8px 16px; border: none; border-radius: 8px; 
+  cursor: pointer; font-weight: 600; transition: background 0.15s;
+}
 .logout-btn:hover { background: #dc2626; }
 
 /* ---------- 4. FLOATING PILL SIDEBAR ---------- */
