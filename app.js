@@ -1784,7 +1784,8 @@ SCREENS.project = async function(el, projectId) {
                     <td class="num">${fmtMoney(i.total)}</td>
                     <td><span class="${badgeClass(i.status)}">${i.status}</span></td>
                     <td class="actions" onclick="event.stopPropagation()">
-                      <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>
+                                           <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>
+                      <button class="btn-secondary btn-sm" data-share="${i.id}" style="margin-left:4px;">Share</button>
                     </td>
                   </tr>
                 `).join('')}
@@ -1809,7 +1810,81 @@ SCREENS.project = async function(el, projectId) {
         location.hash = '#invoice/' + data.id;
       };
     }
+          document.querySelectorAll('[data-share]').forEach(b => {
+        b.onclick = async (e) => {
+          e.stopPropagation();
+          const inv = linkedInvoices.find(x => x.id === b.dataset.share);
+          if (!inv) return;
+          
+          // Fetch studio name for the message
+          const { data: studio } = await db.from('studio').select('name').single();
+          const studioName = studio?.name || 'Studio';
+          
+          openShareModal(inv, project.client, studioName);
+        };
+      });
 
+function openShareModal(invoice, client, studioName) {
+  if (!client) {
+    alert('No client details found for this invoice.');
+    return;
+  }
+
+  const phone = client.phone ? client.phone.replace(/\D/g, '') : '';
+  const email = client.email || '';
+  const amount = Number(invoice.total).toLocaleString('en-IN');
+
+  const message = `Dear ${client.name || 'Client'},\n\nPlease find your invoice ${invoice.invoice_no} for the amount of ₹${amount}.\n\nThank you,\n${studioName}`;
+
+  const nb = document.createElement('div');
+  nb.className = 'modal-backdrop';
+  nb.innerHTML = `
+    <div class="modal" style="max-width:400px">
+      <h2>Share Invoice ${invoice.invoice_no}</h2>
+      <p class="muted small mb-2">Send this invoice to ${client.name || 'the client'}.</p>
+      
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+        
+        <button type="button" class="btn-success" id="share-wa" ${!phone ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+          📱 Send via WhatsApp
+        </button>
+        ${!phone ? '<p class="hint" style="text-align:center; margin-top:-5px;">No phone number saved for this client.</p>' : ''}
+
+        <button type="button" class="btn-secondary" id="share-email" ${!email ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+          ✉️ Send via Email
+        </button>
+        ${!email ? '<p class="hint" style="text-align:center; margin-top:-5px;">No email saved for this client.</p>' : ''}
+
+      </div>
+      
+      <div class="modal-actions" style="margin-top:24px;">
+        <button type="button" class="btn-secondary" id="share-cancel">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(nb);
+
+  document.getElementById('share-cancel').onclick = () => nb.remove();
+  nb.addEventListener('click', e => { if (e.target === nb) nb.remove(); });
+
+  if (phone) {
+    document.getElementById('share-wa').onclick = () => {
+      const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
+      nb.remove();
+    };
+  }
+
+  if (email) {
+    document.getElementById('share-email').onclick = () => {
+      const subject = `Invoice ${invoice.invoice_no} - ${studioName}`;
+      const body = `${message}\n\n(PDF Invoice to be attached)`;
+      window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      nb.remove();
+    };
+  }
+}
+    
     // ============ AGREEMENT ============
     function renderAgreement() {
       return `
