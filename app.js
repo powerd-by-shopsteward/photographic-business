@@ -166,16 +166,23 @@ SCREENS.dashboard = async function(el) {
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
-    const [liveRes, monthInRes, projectsRes, allInRes] = await Promise.all([
+    // Fetch all data at once
+    const [liveRes, monthInRes, projectsRes, allInRes, recentPayRes, pendingInvRes] = await Promise.all([
       db.from('projects').select('id, name, status, start_date, venue_name, client:clients(name)').in('status', ['live', 'scheduled']).order('start_date', { ascending: true }),
       db.from('payments').select('amount').eq('direction', 'in').gte('date', monthStart).not('project_id', 'is', null),
       db.from('projects').select('id, confirmed_amount'),
       db.from('payments').select('project_id, amount, date').eq('direction', 'in'),
+      // Recent Payments (last 5)
+      db.from('payments').select('*, project:projects(name, client:clients(name))').eq('direction', 'in').order('date', { ascending: false }).limit(5),
+      // Pending Invoices (last 5)
+      db.from('invoices').select('*, project:projects(name, client:clients(name))').neq('status', 'paid').order('issue_date', { ascending: false }).limit(5)
     ]);
 
     const liveProjects = liveRes.data || [];
     const projectsAll = projectsRes.data || [];
     const allIn       = allInRes.data || [];
+    const recentPayments = recentPayRes.data || [];
+    const pendingInvoices = pendingInvRes.data || [];
 
     const inByProject = {};
     allIn.forEach(p => { inByProject[p.project_id] = (inByProject[p.project_id] || 0) + Number(p.amount); });
@@ -271,8 +278,55 @@ SCREENS.dashboard = async function(el) {
           </div>
         </div>
       </div>
+
+      <!-- NEW BOTTOM SECTION -->
+      <div class="dashboard-bottom-grid">
+        
+        <!-- Recent Payments -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Payments</h2>
+            <a href="#invoices" class="small" style="color: #2563eb; font-weight: 600;">View All →</a>
+          </div>
+          ${recentPayments.length ? recentPayments.map(p => `
+            <div class="list-item">
+              <div>
+                <div class="name">${p.project?.client?.name || 'Unknown Client'}</div>
+                <div class="sub">${p.project?.name || '—'} · ${fmtDate(p.date)}</div>
+              </div>
+              <div style="font-weight: 700; color: #10b981;">
+                +${fmtMoney(p.amount)}
+              </div>
+            </div>
+          `).join('') : '<p class="muted small" style="text-align:center; padding: 20px 0;">No payments recorded yet.</p>'}
+        </div>
+
+        <!-- Pending Invoices -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Pending Invoices</h2>
+            <a href="#invoices" class="small" style="color: #2563eb; font-weight: 600;">View All →</a>
+          </div>
+          ${pendingInvoices.length ? pendingInvoices.map(i => `
+            <div class="list-item" style="cursor: pointer;" onclick="location.hash='#invoice/${i.id}'">
+              <div>
+                <div class="name">${i.project?.client?.name || 'Unknown Client'}</div>
+                <div class="sub">${i.invoice_no} · ${fmtDate(i.issue_date)}</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-weight: 700; color: #ef4444; margin-bottom: 4px;">
+                  ${fmtMoney(i.total)}
+                </div>
+                <span class="badge badge-${i.status === 'draft' ? 'draft' : 'sent'}">${i.status}</span>
+              </div>
+            </div>
+          `).join('') : '<p class="muted small" style="text-align:center; padding: 20px 0;">All invoices are paid. Great job!</p>'}
+        </div>
+
+      </div>
     `;
 
+    // Render Chart
     const ctx = document.getElementById('dash-chart').getContext('2d');
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, 'rgba(37,99,235,0.2)');
