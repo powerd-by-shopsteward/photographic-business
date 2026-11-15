@@ -1865,13 +1865,14 @@ function openShareModal(invoice, project, studio) {
     btn.textContent = 'Generating PDF...';
 
     try {
-      // 1. Create the hidden A4 container
+      // 1. Create the A4 container VISIBLY on the screen but behind the modal
       const tempDiv = document.createElement('div');
-      // Hide it off-screen so it renders but user doesn't see it
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.top = '-10000px';
-      tempDiv.style.left = '-10000px';
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.top = '0';
+      tempDiv.style.left = '0';
       tempDiv.style.width = '210mm';
+      tempDiv.style.zIndex = '-1'; // Keep it behind the modal so user doesn't see it
+      tempDiv.style.background = '#fff';
       
       // 2. Inject the EXACT HTML from your Invoice Editor
       tempDiv.innerHTML = `
@@ -2004,9 +2005,10 @@ function openShareModal(invoice, project, studio) {
           </div>
         </div>
       `;
+      
+      // 3. Append to body, generate PDF, then remove
       document.body.appendChild(tempDiv);
-
-      // 3. Generate PDF
+      
       const opt = {
         margin: 0,
         filename: `Invoice_${invoice.invoice_no}.pdf`,
@@ -2018,7 +2020,7 @@ function openShareModal(invoice, project, studio) {
       const pdfBlob = await html2pdf().set(opt).from(tempDiv).outputPdf('blob');
       const file = new File([pdfBlob], `Invoice_${invoice.invoice_no}.pdf`, { type: 'application/pdf' });
 
-      // Clean up the hidden element
+      // Clean up the visible element
       document.body.removeChild(tempDiv);
 
       // 4. Share
