@@ -1794,7 +1794,7 @@ SCREENS.project = async function(el, projectId) {
           ` : '<p class="empty">No invoices for this project yet.</p>'}
         </div>`;
     }
-    function wireInvoices() {
+        function wireInvoices() {
       document.getElementById('proj-new-invoice').onclick = async () => {
         // Create a draft invoice linked to this project
         const { data, error } = await db.from('invoices').insert({
@@ -1809,21 +1809,25 @@ SCREENS.project = async function(el, projectId) {
         if (error) { alert(error.message); return; }
         location.hash = '#invoice/' + data.id;
       };
-    }
-          document.querySelectorAll('[data-share]').forEach(b => {
+
+      // Wire up the Share Button
+      document.querySelectorAll('[data-share]').forEach(b => {
         b.onclick = async (e) => {
+          e.preventDefault();
           e.stopPropagation();
-          const inv = linkedInvoices.find(x => x.id === b.dataset.share);
-          if (!inv) return;
           
-          // Fetch studio name for the message
+          const invId = b.dataset.share;
+          const inv = linkedInvoices.find(x => x.id === invId);
+          if (!inv) { alert("Invoice not found."); return; }
+
+          // Get studio name for the message
           const { data: studio } = await db.from('studio').select('name').single();
           const studioName = studio?.name || 'Studio';
           
           openShareModal(inv, project.client, studioName);
         };
       });
-
+    }
 function openShareModal(invoice, client, studioName) {
   if (!client) {
     alert('No client details found for this invoice.');
@@ -1848,12 +1852,12 @@ function openShareModal(invoice, client, studioName) {
         <button type="button" class="btn-success" id="share-wa" ${!phone ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
           📱 Send via WhatsApp
         </button>
-        ${!phone ? '<p class="hint" style="text-align:center; margin-top:-5px;">No phone number saved for this client.</p>' : ''}
+        ${!phone ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No phone number saved for this client.</p>' : ''}
 
         <button type="button" class="btn-secondary" id="share-email" ${!email ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
           ✉️ Send via Email
         </button>
-        ${!email ? '<p class="hint" style="text-align:center; margin-top:-5px;">No email saved for this client.</p>' : ''}
+        ${!email ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No email saved for this client.</p>' : ''}
 
       </div>
       
