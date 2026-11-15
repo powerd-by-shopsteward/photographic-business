@@ -1784,9 +1784,8 @@ SCREENS.project = async function(el, projectId) {
                     <td class="num">${fmtMoney(i.total)}</td>
                     <td><span class="${badgeClass(i.status)}">${i.status}</span></td>
                     <td class="actions" onclick="event.stopPropagation()">                 
-                   <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>
-                       <button class="btn-secondary btn-sm" data-share="${i.id}" style="margin-left:4px;">Share</button>
-                  </tr>
+                   <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>                      
+                 </tr>
                 `).join('')}
               </tbody>
             </table>
@@ -1806,23 +1805,9 @@ SCREENS.project = async function(el, projectId) {
       if (error) { alert(error.message); return; }
         location.hash = '#invoice/' + data.id;
       };
-                    // Wire up the Share Button
-      document.querySelectorAll('[data-share]').forEach(b => {
-        b.onclick = async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          const invId = b.dataset.share;
-          const { data: fullInv } = await db.from('invoices').select('*, project:projects(name, client:clients(*))').eq('id', invId).single();
-          if (!fullInv) { alert("Invoice not found."); return; }
-          const { data: studio } = await db.from('studio').select('*').single();
-          
-          openShareModal(fullInv, fullInv.project, studio);
-        };
-      });
-    }
-    
-              
+              }
+               
+                  
     // ============ AGREEMENT ============
     function renderAgreement() {
       return `
