@@ -4434,16 +4434,22 @@ async function uploadImage(file, folder) {
 async function loadBrandName() {
   const { data } = await db.from('studio').select('name, logo_url').single();
   
+  // 1. Set Studio Name in the center
   if (data?.name) {
     document.getElementById('header-studio-name').textContent = data.name;
   }
   
-  const logoImg = document.getElementById('header-logo');
+  // 2. Set Studio Logo as the Profile Button
+  const profileLogo = document.getElementById('header-profile-logo');
+  const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+  
   if (data?.logo_url) {
-    logoImg.src = data.logo_url;
-    logoImg.style.display = 'block';
+    profileLogo.src = data.logo_url;
+    profileLogo.style.display = 'block';
+    fallbackEmoji.style.display = 'none';
   } else {
-    logoImg.style.display = 'none';
+    profileLogo.style.display = 'none';
+    fallbackEmoji.style.display = 'block';
   }
 }
 
