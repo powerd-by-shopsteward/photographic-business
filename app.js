@@ -1783,8 +1783,9 @@ SCREENS.project = async function(el, projectId) {
                     <td>${fmtDate(i.issue_date)}</td>
                     <td class="num">${fmtMoney(i.total)}</td>
                     <td><span class="${badgeClass(i.status)}">${i.status}</span></td>
-                    <td class="actions" onclick="event.stopPropagation()">
+                    <td class="actions" onclick="event.stopPropagation()">                 
                    <button class="btn-secondary btn-sm" onclick="location.hash='#invoice/${i.id}'">Edit</button>
+                       <button class="btn-secondary btn-sm" data-share="${i.id}" style="margin-left:4px;">Share</button>
                   </tr>
                 `).join('')}
               </tbody>
@@ -1805,6 +1806,21 @@ SCREENS.project = async function(el, projectId) {
       if (error) { alert(error.message); return; }
         location.hash = '#invoice/' + data.id;
       };
+                    // Wire up the Share Button
+      document.querySelectorAll('[data-share]').forEach(b => {
+        b.onclick = async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const invId = b.dataset.share;
+          const { data: fullInv } = await db.from('invoices').select('*, project:projects(name, client:clients(*))').eq('id', invId).single();
+          if (!fullInv) { alert("Invoice not found."); return; }
+          const { data: studio } = await db.from('studio').select('*').single();
+          
+          openShareModal(fullInv, fullInv.project, studio);
+        };
+      });
+    }
     }
               
 
@@ -4805,5 +4821,159 @@ SCREENS.invoice = async function(el, id) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
 };
+function openShareModal(invoice, project, studio) {
+  if (!project || !project.client) {
+    alert('No client details found for this invoice.');
+    return;
+  }
+  const client = project.client;
+  const studioName = studio?.name || 'Studio';
+  const amount = Number(invoice.total).toLocaleString('en-IN');
+  const message = `Dear ${client.name || 'Client'},\n\nPlease find your invoice ${invoice.invoice_no} for the amount of ₹${amount}.\n\nThank you,\n${studioName}`;
+
+  const nb = document.createElement('div');
+  nb.className = 'modal-backdrop';
+  nb.innerHTML = `
+    <div class="modal" style="max-width:400px">
+      <h2>Share Invoice ${invoice.invoice_no}</h2>
+      <p class="muted small mb-2">Send this invoice to ${client.name || 'the client'}.</p>
+      
+      <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+        <button type="button" class="btn-success" id="share-system">
+          📤 Generate & Share PDF
+        </button>
+      </div>
+      
+      <div class="modal-actions" style="margin-top:24px;">
+        <button type="button" class="btn-secondary" id="share-cancel">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(nb);
+
+  document.getElementById('share-cancel').onclick = () => nb.remove();
+  nb.addEventListener('click', e => { if (e.target === nb) nb.remove(); });
+
+  document.getElementById('share-system').onclick = async () => {
+    const btn = document.getElementById('share-system');
+    btn.disabled = true;
+    btn.textContent = 'Generating PDF...';
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      
+      // --- HEADER ---
+      doc.setFontSize(22);
+      doc.setFont("helvetica", "bold");
+      doc.text(studioName, 15, 25);
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(studio.address || '', 15, 32);
+      doc.text(`${studio.phone || ''} | ${studio.email || ''}`, 15, 37);
+
+      doc.setFontSize(20);
+      doc.setFont("helvetica", "bold");
+      doc.text("TAX INVOICE", 195, 25, { align: "right" });
+      
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Invoice No: ${invoice.invoice_no}`, 195, 33, { align: "right" });
+      doc.text(`Date: ${fmtDate(invoice.issue_date)}`, 195, 38, { align: "right" });
+
+      // --- CLIENT DETAILS ---
+      doc.setDrawColor(200);
+      doc.line(15, 45, 195, 45);
+
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text("BILLED TO:", 15, 52);
+      
+      doc.setTextColor(0);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(client.name || 'Client Name', 15, 58);
+      
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(client.address || 'Address not provided', 15, 64);
+      doc.text(client.phone || '', 15, 69);
+
+      // --- ITEMS TABLE ---
+      const meta = invoice.metadata || {};
+      const items = meta.items || [{ description: project.name, qty: 1, rate: invoice.total }];
+      
+      const tableData = items.map((item, i) => [
+        i + 1,
+        item.description,
+        item.hsn || '-',
+        item.qty,
+        fmtMoney(item.rate),
+        fmtMoney(item.qty * item.rate)
+      ]);
+
+      doc.autoTable({
+        startY: 78,
+        head: [['#', 'Description of Service', 'HSN/SAC', 'Qty', 'Rate (₹)', 'Amount (₹)']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { fillColor: [0, 0, 0], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 3 }
+      });
+
+      // --- TOTALS ---
+      let finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFontSize(10);
+      doc.text("Taxable Value:", 140, finalY);
+      doc.text(`₹${fmtMoney(invoice.amount)}`, 195, finalY, { align: "right" });
+      
+      doc.text("Tax / GST:", 140, finalY + 6);
+      doc.text(`₹${fmtMoney(invoice.tax || 0)}`, 195, finalY + 6, { align: "right" });
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("GRAND TOTAL:", 140, finalY + 14);
+      doc.text(`₹${fmtMoney(invoice.total)}`, 195, finalY + 14, { align: "right" });
+
+      // --- FOOTER / TERMS ---
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text("Terms & Conditions:", 15, finalY + 20);
+      doc.text("1. This invoice is generated electronically.", 15, finalY + 25);
+      doc.text("2. Payment is due within 7 days of the invoice date.", 15, finalY + 29);
+      if (meta.contact_phone) doc.text(`3. For any queries, contact: ${meta.contact_phone}`, 15, finalY + 33);
+
+      doc.setTextColor(0);
+      doc.text("Authorized Signatory", 195, finalY + 30, { align: "right" });
+      doc.line(150, finalY + 26, 195, finalY + 26);
+
+      // 2. Generate the Blob
+      const pdfBlob = doc.output('blob');
+      const file = new File([pdfBlob], `Invoice_${invoice.invoice_no}.pdf`, { type: 'application/pdf' });
+
+      // 3. Share
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Invoice ${invoice.invoice_no}`,
+          text: message
+        });
+        nb.remove();
+      } else {
+        alert("Your browser doesn't support direct file sharing. The PDF will download instead.");
+        doc.save(`Invoice_${invoice.invoice_no}.pdf`);
+      }
+
+    } catch (err) {
+      console.error("Share failed:", err);
+      alert("Error generating PDF: " + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📤 Generate & Share PDF';
+    }
+  };
+}
 
 bootApp();
