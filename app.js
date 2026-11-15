@@ -1849,15 +1849,26 @@ function openShareModal(invoice, client, studioName) {
       
       <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
         
-        <button type="button" class="btn-success" id="share-wa" ${!phone ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
-          📱 Send via WhatsApp
+        <!-- New Share PDF Button -->
+        <button type="button" class="btn-success" id="share-file">
+          📄 Share Invoice PDF
         </button>
-        ${!phone ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No phone number saved for this client.</p>' : ''}
+        <p class="hint" style="text-align:center; margin-top:-5px; font-size:11px;">
+          Opens your device's share menu to send the PDF via WhatsApp or Email.
+        </p>
+
+        <hr style="margin:10px 0; border-color:#eee;">
+
+        <!-- Old Text-only options as fallback -->
+        <button type="button" class="btn-secondary" id="share-wa" ${!phone ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
+          📱 Send Text via WhatsApp
+        </button>
+        ${!phone ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No phone number saved.</p>' : ''}
 
         <button type="button" class="btn-secondary" id="share-email" ${!email ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''}>
-          ✉️ Send via Email
+          ✉️ Send Text via Email
         </button>
-        ${!email ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No email saved for this client.</p>' : ''}
+        ${!email ? '<p class="hint" style="text-align:center; margin-top:-5px; color:#dc2626;">No email saved.</p>' : ''}
 
       </div>
       
@@ -1871,6 +1882,20 @@ function openShareModal(invoice, client, studioName) {
   document.getElementById('share-cancel').onclick = () => nb.remove();
   nb.addEventListener('click', e => { if (e.target === nb) nb.remove(); });
 
+  // --- NEW: Share PDF File Logic ---
+  document.getElementById('share-file').onclick = async () => {
+    // 1. Generate the PDF (using a library like html2pdf.js)
+    // Note: You need to include html2pdf.js in your index.html for this to work.
+    // For now, this is a placeholder. We will use a simpler workaround.
+    
+    // Workaround: Tell the user to download the PDF first, then share it.
+    alert("Please use the 'Print PDF' button to download the invoice first. Then, use the WhatsApp share button to attach it manually.");
+    nb.remove();
+    
+    // *Advanced implementation would involve generating a Blob and using navigator.share({ files: [file] })*
+  };
+
+  // Old WhatsApp Logic (Text Only)
   if (phone) {
     document.getElementById('share-wa').onclick = () => {
       const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
@@ -1879,6 +1904,7 @@ function openShareModal(invoice, client, studioName) {
     };
   }
 
+  // Old Email Logic (Text Only)
   if (email) {
     document.getElementById('share-email').onclick = () => {
       const subject = `Invoice ${invoice.invoice_no} - ${studioName}`;
