@@ -394,3 +394,15 @@ td.actions { text-align: right; white-space: nowrap; }
     overflow: hidden !important; /* Stops the blank 2nd page */
   }
 }
+/* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 24px;
+}
+@media (max-width: 1024px) {
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+  }
+}
