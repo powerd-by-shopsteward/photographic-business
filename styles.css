@@ -425,45 +425,27 @@ td.actions { text-align: right; white-space: nowrap; }
   }
 }
 /* ============================================================
-   GLASSMORPHISM OVERWRITE (Cards, Forms, Modals)
+   OPTION 1: CLEAN FROSTED GLASS
    ============================================================ */
 
-/* 1. Main Cards & Stat Cards */
-.card, .stat {
-  background: rgba(255, 255, 255, 0.65) !important; /* Semi-transparent white */
-  backdrop-filter: blur(16px); /* Frosted glass blur */
-  -webkit-backdrop-filter: blur(16px); /* Safari support */
-  border: 1px solid rgba(255, 255, 255, 0.8) !important; /* Bright glass edge */
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07) !important; /* Soft floating shadow */
+/* 1. Lighten the background overlay so the image isn't too dark */
+body {
+  background: linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), 
+              url('images/backdrop.png') center/cover no-repeat fixed !important;
 }
 
-/* 2. Modals (Forms like Add Member, New Project) */
-.modal {
-  background: rgba(255, 255, 255, 0.85) !important; /* Slightly more opaque so text is easy to read */
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.25) !important;
+/* 2. Make the cards 85% white so text is perfectly readable */
+.card, .stat, .modal {
+  background: rgba(255, 255, 255, 0.85) !important; 
+  backdrop-filter: blur(20px) !important; 
+  -webkit-backdrop-filter: blur(20px) !important; 
+  border: 1px solid rgba(255, 255, 255, 0.9) !important; 
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
 }
 
-/* 3. Inputs inside the modals */
-input[type=text], input[type=email], input[type=password], input[type=tel],
-input[type=number], input[type=date], input[type=time], input[type=url],
-select, textarea {
-  background: rgba(255, 255, 255, 0.7) !important; /* Slightly transparent inputs */
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  transition: all 0.2s;
-}
-
-input:focus, select:focus, textarea:focus {
-  background: rgba(255, 255, 255, 0.95) !important; /* Turns solid white when typing */
-  border-color: #2563eb !important;
-}
-
-/* 4. The Floating Sidebar */
+/* 3. Sidebar */
 .sidebar-pill {
-  background: rgba(255, 255, 255, 0.7) !important;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
 }
