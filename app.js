@@ -1827,6 +1827,7 @@ SCREENS.project = async function(el, projectId) {
           openShareModal(fullInv, fullInv.project, studio);
         };
       });
+           }
 function openShareModal(invoice, project, studio) {
   if (!project || !project.client) {
     alert('No client details found for this invoice.');
