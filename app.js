@@ -805,18 +805,33 @@ async function addMember({ name, phone, address, role,
 SCREENS.members = async function(el) {
   el.innerHTML = '<div class="loading">Loading members…</div>';
   try {
-    const [tmRes, pRes] = await Promise.all([
+    const [tmRes, pRes, pmRes, payRes] = await Promise.all([
       db.from('team_members').select('*').order('name'),
-      db.from('profiles')
-        .select('id, team_member_id, email, active, role')
-        .eq('role', 'member'),
+      db.from('profiles').select('id, team_member_id, email, active, role').eq('role', 'member'),
+      db.from('project_members').select('team_member_id, pay_amount, status').neq('status', 'cancelled'),
+      db.from('payments').select('member_id, amount').eq('direction', 'out').eq('type', 'team_payout')
     ]);
     if (tmRes.error) throw tmRes.error;
 
     const members  = tmRes.data || [];
     const profiles = pRes.data || [];
+    const projectMembers = pmRes.data || [];
+    const payments = payRes.data || [];
+
     const profByTm = {};
     profiles.forEach(p => { if (p.team_member_id) profByTm[p.team_member_id] = p; });
+
+    // Calculate global totals
+    const stats = {};
+    members.forEach(m => { stats[m.id] = { owed: 0, paid: 0 }; });
+    
+    projectMembers.forEach(pm => {
+      if (stats[pm.team_member_id]) stats[pm.team_member_id].owed += Number(pm.pay_amount);
+    });
+    
+    payments.forEach(p => {
+      if (stats[p.member_id]) stats[p.member_id].paid += Number(p.amount);
+    });
 
     el.innerHTML = `
       <div class="card">
@@ -828,21 +843,29 @@ SCREENS.members = async function(el) {
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Name</th><th>Phone</th><th>Role</th>
-                <th>Login</th><th class="num">Default Rate</th><th></th>
+                <th>Name</th><th>Phone</th><th>Role</th><th>Login</th>
+                <th class="num">Total Owed</th><th class="num">Total Paid</th><th class="num">Balance Due</th><th></th>
               </tr></thead>
               <tbody>
                 ${members.map(m => {
                   const prof = profByTm[m.id];
+                  const s = stats[m.id] || { owed: 0, paid: 0 };
+                  const balance = s.owed - s.paid;
+                  
                   const loginCell = prof
                     ? `<span class="badge badge-${prof.active ? 'signed' : 'cancelled'}">${prof.email}</span>`
                     : '<span class="muted small">none</span>';
+
                   return `<tr>
                     <td><strong>${m.name}</strong>${m.active ? '' : ' <span class="badge badge-cancelled">inactive</span>'}</td>
                     <td>${m.phone || '—'}</td>
                     <td>${m.role || '—'}</td>
                     <td>${loginCell}</td>
-                    <td class="num">${m.default_rate ? fmtMoney(m.default_rate) : '—'}</td>
+                    <td class="num">${fmtMoney(s.owed)}</td>
+                    <td class="num" style="color:#059669;">${fmtMoney(s.paid)}</td>
+                    <td class="num" style="font-weight:bold; color:${balance > 0 ? '#dc2626' : '#059669'};">
+                      ${fmtMoney(balance)}
+                    </td>
                     <td class="actions">
                       <button class="btn-secondary btn-sm" data-edit="${m.id}">Edit</button>
                     </td>
@@ -1192,18 +1215,21 @@ SCREENS.project = async function(el, projectId) {
   const isOwner = CURRENT_PROFILE.role === 'owner';
 
   try {
-    const [pRes, pmRes, stRes, upRes, gRes, exRes, tmRes, invRes, agrRes] = await Promise.all([
+        const [pRes, pmRes, stRes, upRes, gRes, payRes, exRes, tmRes, invRes, agrRes] = await Promise.all([
       db.from('projects').select('*, client:clients(name, phone, email)').eq('id', projectId).single(),
       db.from('project_members').select('*, team_member:team_members(name, phone, role)').eq('project_id', projectId).order('created_at'),
       db.from('project_stages').select('*').eq('project_id', projectId).order('sort_order'),
       db.from('project_updates').select('*').eq('project_id', projectId).order('created_at', {ascending:false}),
       db.from('project_gear').select('*, gadget:gadgets(name, brand), member_gadget:member_gadgets(name), carrier:team_members(name)').eq('project_id', projectId),
+      
+      // --- THIS IS THE NEW LINE FOR PAYOUTS ---
+      db.from('payments').select('member_id, amount').eq('project_id', projectId).eq('type', 'team_payout'),
+      // ----------------------------------------
+
       db.from('expenses').select('*').eq('project_id', projectId).order('date', {ascending:false}),
       isOwner ? db.from('team_members').select('id, name, role, default_rate').eq('active', true).order('name')
               : Promise.resolve({ data: [] }),
-      // Fetch linked invoices
       db.from('invoices').select('id, invoice_no, total, issue_date, status').eq('project_id', projectId).order('created_at', {ascending: false}),
-      // Fetch linked agreements
       db.from('agreements').select('id, agreement_no, status, agreement_date, total_amount').eq('project_id', projectId).order('created_at', {ascending: false})
     ]);
 
@@ -1369,7 +1395,7 @@ SCREENS.project = async function(el, projectId) {
     function wireOverview() {}
 
     // ============ TEAM ============
-    function renderTeam() {
+        function renderTeam() {
       return `
         <div class="card">
           <div class="card-header">
@@ -1380,21 +1406,34 @@ SCREENS.project = async function(el, projectId) {
             <table>
               <thead><tr><th>Name</th><th>Role</th><th>Status</th><th class="num">Pay</th><th></th></tr></thead>
               <tbody>
-                ${members.map(m => `
+                ${members.map(m => {
+                  const paidRecord = (payRes.data || []).find(p => p.member_id === m.team_member_id);
+                  const isPaid = !!paidRecord;
+
+                  return `
                   <tr>
                     <td><strong>${esc(m.team_member?.name || '—')}</strong></td>
                     <td>${esc(m.team_member?.role || '—')}</td>
                     <td><span class="${badgeClass(m.status)}">${m.status}</span></td>
                     <td class="num">${fmtMoney(m.pay_amount)}</td>
-                    <td class="actions"><button class="btn-danger btn-sm" data-rm="${m.id}">Remove</button></td>
-                  </tr>`).join('')}
+                    <td class="actions" style="text-align:right;">
+                      ${isPaid 
+                        ? `<span style="color:#059669; font-weight:bold; font-size:13px;">✓ Paid successfully</span>`
+                        : `<button class="btn-success btn-sm" data-pay="${m.team_member_id}" data-amt="${m.pay_amount}">Mark Paid</button>
+                           <button class="btn-danger btn-sm" data-rm="${m.id}" style="margin-left:8px;">Remove</button>`
+                      }
+                    </td>
+                  </tr>`
+                }).join('')}
               </tbody>
             </table>
           ` : `<p class="empty">No team assigned yet.</p>`}
         </div>`;
     }
-    function wireTeam() {
+        function wireTeam() {
       document.getElementById('t-add-member').onclick = openAddProjectMember;
+      
+      // Remove member logic
       document.querySelectorAll('[data-rm]').forEach(b => {
         b.onclick = async () => {
           if (!confirm('Remove this member from the project?')) return;
@@ -1403,57 +1442,35 @@ SCREENS.project = async function(el, projectId) {
           reloadProject();
         };
       });
-    }
 
-    async function openAddProjectMember() {
-      const assigned = new Set(members.map(m => m.team_member_id));
-      const available = allTeam.filter(t => !assigned.has(t.id));
-      if (!available.length) { alert('All active members are already assigned.'); return; }
+      // Mark Paid logic
+      document.querySelectorAll('[data-pay]').forEach(b => {
+        b.onclick = async () => {
+          if (!confirm(`Confirm payout of ${fmtMoney(b.dataset.amt)} to this member?`)) return;
+          b.disabled = true;
+          b.textContent = 'Processing...';
+          
+          const { data: { user } } = await db.auth.getUser();
+          const { error } = await db.from('payments').insert({
+            project_id: projectId,
+            member_id: b.dataset.pay,
+            direction: 'out',
+            type: 'team_payout',
+            amount: Number(b.dataset.amt),
+            date: todayISO(),
+            notes: 'Team payout marked from project page',
+            created_by: user.id
+          });
 
-      const nb = document.createElement('div');
-      nb.className = 'modal-backdrop';
-      nb.innerHTML = `
-        <div class="modal" style="max-width:420px">
-          <h2>Add to Project</h2>
-          <label>Member</label>
-          <select id="ap-member">
-            ${available.map(t => `<option value="${t.id}" data-rate="${t.default_rate || ''}">${esc(t.name)} — ${esc(t.role || '—')}</option>`).join('')}
-          </select>
-          <label>Pay Amount</label>
-          <input id="ap-pay" type="number" min="0" step="0.01" value="0">
-          <p id="ap-error" class="error"></p>
-          <div class="modal-actions">
-            <button type="button" class="btn-secondary" id="ap-cancel">Cancel</button>
-            <button type="button" id="ap-save">Add</button>
-          </div>
-        </div>`;
-      document.body.appendChild(nb);
-
-      const sel = document.getElementById('ap-member');
-      const pay = document.getElementById('ap-pay');
-      const autofill = () => {
-        const rate = sel.selectedOptions[0]?.dataset.rate;
-        if (rate) pay.value = rate;
-      };
-      sel.onchange = autofill;
-      autofill();
-
-      document.getElementById('ap-cancel').onclick = () => nb.remove();
-      nb.querySelector('#ap-save').onclick = async () => {
-        const errBox = document.getElementById('ap-error');
-        errBox.textContent = '';
-        const { error } = await db.from('project_members').insert({
-          project_id: projectId,
-          team_member_id: sel.value,
-          rate: Number(pay.value || 0),
-          quantity: 1,
-          pay_amount: Number(pay.value || 0),
-          status: 'assigned',
-        });
-        if (error) { errBox.textContent = error.message; return; }
-        nb.remove();
-        reloadProject();
-      };
+          if (error) {
+            alert("Error recording payment: " + error.message);
+            b.disabled = false;
+            b.textContent = 'Mark Paid';
+          } else {
+            reloadProject();
+          }
+        };
+      });
     }
 
     // ============ STAGES ============
