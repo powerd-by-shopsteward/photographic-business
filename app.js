@@ -167,13 +167,10 @@ SCREENS.dashboard = async function(el) {
     const monthStart = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`;
 
     const [liveRes, monthInRes, projectsRes, allInRes] = await Promise.all([
-      db.from('projects')
-        .select('id, name, status, start_date, end_date, venue_name, client:clients(name)')
-        .in('status', ['live', 'scheduled'])
-        .order('start_date', { ascending: true }),
+      db.from('projects').select('id, name, status, start_date, venue_name, client:clients(name)').in('status', ['live', 'scheduled']).order('start_date', { ascending: true }),
       db.from('payments').select('amount').eq('direction', 'in').gte('date', monthStart).not('project_id', 'is', null),
       db.from('projects').select('id, confirmed_amount'),
-      db.from('payments').select('project_id, amount').eq('direction', 'in'),
+      db.from('payments').select('project_id, amount, date').eq('direction', 'in'),
     ]);
 
     const liveProjects = liveRes.data || [];
@@ -181,9 +178,7 @@ SCREENS.dashboard = async function(el) {
     const allIn       = allInRes.data || [];
 
     const inByProject = {};
-    allIn.forEach(p => {
-      inByProject[p.project_id] = (inByProject[p.project_id] || 0) + Number(p.amount);
-    });
+    allIn.forEach(p => { inByProject[p.project_id] = (inByProject[p.project_id] || 0) + Number(p.amount); });
 
     let receivable = 0;
     projectsAll.forEach(p => {
@@ -195,6 +190,24 @@ SCREENS.dashboard = async function(el) {
     const liveCount    = liveProjects.filter(p => p.status === 'live').length;
     const todayProjects = liveProjects.filter(p => p.start_date === today || p.status === 'live');
     const upcoming      = liveProjects.filter(p => p.status === 'scheduled');
+
+    // Calculate 6-month revenue for chart
+    const monthMap = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      monthMap[key] = 0;
+    }
+    allIn.forEach(inv => {
+      if (!inv.date) return;
+      const key = String(inv.date).slice(0,7);
+      if (key in monthMap) monthMap[key] += Number(inv.amount || 0);
+    });
+    const chartLabels = Object.keys(monthMap).map(k => {
+      const parts = k.split('-');
+      return new Date(parts[0], parts[1]-1).toLocaleString('default', { month: 'short' });
+    });
+    const chartData = Object.values(monthMap);
 
     el.innerHTML = `
       <div class="stat-grid">
@@ -211,46 +224,90 @@ SCREENS.dashboard = async function(el) {
           <div class="value ${receivable > 0 ? 'neg' : ''}">${fmtMoney(receivable)}</div>
         </div>
         <div class="stat">
-          <div class="label">Upcoming</div>
+          <div class="label">Upcoming Shoots</div>
           <div class="value">${upcoming.length}</div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-header">
-          <h2>Today &amp; Live</h2>
-          <a href="#projects" class="small">View all →</a>
-        </div>
-        ${todayProjects.length ? todayProjects.map(p => `
-          <div style="padding:10px 0;border-bottom:1px solid #f0f0f0">
-            <div class="flex-between">
-              <div>
-                <a href="#project/${p.id}"><strong>${p.name}</strong></a>
-                <span class="${badgeClass(p.status)}" style="margin-left:8px">${p.status}</span>
-              </div>
-              <div class="muted small">${fmtDate(p.start_date)}</div>
-            </div>
-            <div class="muted small" style="margin-top:4px">
-              ${p.client?.name || '—'} · ${p.venue_name || 'no venue'}
-            </div>
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2>Revenue Trend (Last 6 Months)</h2>
           </div>
-        `).join('') : '<p class="empty">Nothing scheduled or live today.</p>'}
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <h2>Upcoming</h2>
+          <div class="chart-container">
+            <canvas id="dash-chart"></canvas>
+          </div>
         </div>
-        ${upcoming.length
-          ? upcoming.map(p => `
-            <div style="padding:8px 0;border-bottom:1px solid #f0f0f0" class="flex-between">
-              <div><a href="#project/${p.id}">${p.name}</a> · <span class="muted">${p.client?.name || '—'}</span></div>
-              <div class="muted small">${fmtDate(p.start_date)}</div>
+
+        <div class="right-side-stack">
+          <div class="card">
+            <div class="card-header">
+              <h2 style="color: #10b981;">LIVE NOW</h2>
             </div>
-          `).join('')
-          : '<p class="empty">No upcoming projects.</p>'}
+            ${todayProjects.length ? todayProjects.map(p => `
+              <div class="list-item">
+                <div>
+                  <div class="name"><a href="#project/${p.id}">${p.name}</a></div>
+                  <div class="sub">${p.client?.name || '—'} · ${p.venue_name || 'No venue'}</div>
+                </div>
+                <span class="badge badge-live">Live</span>
+              </div>
+            `).join('') : '<p class="muted small" style="text-align:center; padding: 20px 0;">Nothing live right now.</p>'}
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 style="color: #f59e0b;">UPCOMING</h2>
+            </div>
+            ${upcoming.length ? upcoming.slice(0, 5).map(p => `
+              <div class="list-item">
+                <div>
+                  <div class="name"><a href="#project/${p.id}">${p.name}</a></div>
+                  <div class="sub">${p.client?.name || '—'} · ${fmtDate(p.start_date)}</div>
+                </div>
+                <span class="badge badge-scheduled">Scheduled</span>
+              </div>
+            `).join('') : '<p class="muted small" style="text-align:center; padding: 20px 0;">No upcoming projects.</p>'}
+          </div>
+        </div>
       </div>
     `;
+
+    const ctx = document.getElementById('dash-chart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(37,99,235,0.2)');
+    gradient.addColorStop(1, 'rgba(37,99,235,0.01)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: chartLabels,
+        datasets: [{
+          label: 'Revenue',
+          data: chartData,
+          borderColor: '#2563eb',
+          backgroundColor: gradient,
+          borderWidth: 3,
+          pointBackgroundColor: '#2563eb',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { borderDash: [5, 5], color: '#e2e8f0' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${err.message}</p></div>`;
   }
@@ -262,6 +319,10 @@ SCREENS.dashboard = async function(el) {
 
 let PROJECTS_FILTER = { search: '', status: 'all' };
 
+SCREENS['live-projects'] = async function(el) {
+  PROJECTS_FILTER.status = 'live';
+  return SCREENS.projects(el);
+};
 SCREENS.projects = async function(el) {
   el.innerHTML = '<div class="loading">Loading projects…</div>';
 
@@ -4374,17 +4435,15 @@ async function loadBrandName() {
   const { data } = await db.from('studio').select('name, logo_url').single();
   
   if (data?.name) {
-    document.getElementById('brand-name').textContent = data.name;
+    document.getElementById('header-studio-name').textContent = data.name;
   }
   
-  // Update the top-left Profile Button
-  const profileBtn = document.getElementById('profile-btn');
+  const logoImg = document.getElementById('header-logo');
   if (data?.logo_url) {
-    profileBtn.innerHTML = `<img src="${data.logo_url}" style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid #ccc;">`;
-    profileBtn.style.padding = '2px';
+    logoImg.src = data.logo_url;
+    logoImg.style.display = 'block';
   } else {
-    profileBtn.innerHTML = '👤';
-    profileBtn.style.padding = '6px 10px';
+    logoImg.style.display = 'none';
   }
 }
 
