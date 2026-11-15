@@ -1821,9 +1821,8 @@ SCREENS.project = async function(el, projectId) {
         };
       });
     }
-    }
+    
               
-
     // ============ AGREEMENT ============
     function renderAgreement() {
       return `
