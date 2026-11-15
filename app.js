@@ -1472,6 +1472,57 @@ SCREENS.project = async function(el, projectId) {
         };
       });
     }
+    async function openAddProjectMember() {
+      const assigned = new Set(members.map(m => m.team_member_id));
+      const available = allTeam.filter(t => !assigned.has(t.id));
+      if (!available.length) { alert('All active members are already assigned.'); return; }
+
+      const nb = document.createElement('div');
+      nb.className = 'modal-backdrop';
+      nb.innerHTML = `
+        <div class="modal" style="max-width:420px">
+          <h2>Add to Project</h2>
+          <label>Member</label>
+          <select id="ap-member">
+            ${available.map(t => `<option value="${t.id}" data-rate="${t.default_rate || ''}">${esc(t.name)} — ${esc(t.role || '—')}</option>`).join('')}
+          </select>
+          <label>Pay Amount</label>
+          <input id="ap-pay" type="number" min="0" step="0.01" value="0">
+          <p id="ap-error" class="error"></p>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="ap-cancel">Cancel</button>
+            <button type="button" id="ap-save">Add</button>
+          </div>
+        </div>`;
+      document.body.appendChild(nb);
+
+      const sel = document.getElementById('ap-member');
+      const pay = document.getElementById('ap-pay');
+      const autofill = () => {
+        const rate = sel.selectedOptions[0]?.dataset.rate;
+        if (rate) pay.value = rate;
+      };
+      sel.onchange = autofill;
+      autofill();
+
+      document.getElementById('ap-cancel').onclick = () => nb.remove();
+      nb.querySelector('#ap-save').onclick = async () => {
+        const errBox = document.getElementById('ap-error');
+        errBox.textContent = '';
+        const { error } = await db.from('project_members').insert({
+          project_id: projectId,
+          team_member_id: sel.value,
+          rate: Number(pay.value || 0),
+          quantity: 1,
+          pay_amount: Number(pay.value || 0),
+          status: 'assigned',
+        });
+        if (error) { errBox.textContent = error.message; return; }
+        nb.remove();
+        reloadProject();
+      };
+    }
+    
 
     // ============ STAGES ============
     function renderStages() {
