@@ -1794,9 +1794,8 @@ SCREENS.project = async function(el, projectId) {
           ` : '<p class="empty">No invoices for this project yet.</p>'}
         </div>`;
     }
-        function wireInvoices() {
+            function wireInvoices() {
       document.getElementById('proj-new-invoice').onclick = async () => {
-        // Create a draft invoice linked to this project
         const { data, error } = await db.from('invoices').insert({
           project_id: projectId,
           invoice_no: 'DRAFT',
@@ -1805,29 +1804,24 @@ SCREENS.project = async function(el, projectId) {
           status: 'draft',
           metadata: { items: [{ description: project.name, hsn: '', qty: 1, rate: project.confirmed_amount || 0 }], payment_mode: 'Bank Transfer', amount_words: '' }
         }).select().single();
-
         if (error) { alert(error.message); return; }
         location.hash = '#invoice/' + data.id;
       };
 
-      // Wire up the Share Button
-            document.querySelectorAll('[data-share]').forEach(b => {
+      document.querySelectorAll('[data-share]').forEach(b => {
         b.onclick = async (e) => {
           e.preventDefault();
           e.stopPropagation();
           
           const invId = b.dataset.share;
-          // Fetch the FULL invoice data including the metadata (line items)
           const { data: fullInv } = await db.from('invoices').select('*, project:projects(name, client:clients(*))').eq('id', invId).single();
-          
           if (!fullInv) { alert("Invoice not found."); return; }
-
           const { data: studio } = await db.from('studio').select('*').single();
           
           openShareModal(fullInv, fullInv.project, studio);
         };
       });
-           }
+    } // <--- MAKE SURE THIS CLOSING BRACE EXISTS
 function openShareModal(invoice, project, studio) {
   if (!project || !project.client) {
     alert('No client details found for this invoice.');
