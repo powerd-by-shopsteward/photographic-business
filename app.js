@@ -3503,7 +3503,6 @@ SCREENS.reports = async function(el) {
   }
 };
 
-// ============ STUDIO VALUE ============
 SCREENS['studio-value'] = async function(el) {
   el.innerHTML = '<div class="loading">Calculating studio value…</div>';
   try {
@@ -3521,47 +3520,86 @@ SCREENS['studio-value'] = async function(el) {
     const exps    = exRes.data || [];
     const pms     = pmRes.data || [];
 
-    // 1. Equipment (Stock) Value
+    // ---- 1. Equipment (Stock) Value ----
     const equipmentValue = gadgets.reduce((s, g) =>
       s + Number(g.current_value || g.purchase_price || 0), 0);
 
-    // 2. Cash in Hand (Received minus Paid Out)
+    // ---- 2. Cash in Hand (actual bank movement) ----
     let totalIn = 0, totalOut = 0;
     pays.forEach(p => {
-      if (p.direction === 'in') totalIn += Number(p.amount);
+      if (p.direction === 'in')  totalIn  += Number(p.amount);
       if (p.direction === 'out') totalOut += Number(p.amount);
     });
     const cashInHand = totalIn - totalOut;
 
-    // 3. Receivables (Unpaid confirmed amounts)
-    const totalConfirmed = proj.reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
-    const totalReceivable = Math.max(0, totalConfirmed - totalIn);
+    // ---- Aggregators per project ----
+    const receivedByProject = {};
+    pays.filter(p => p.direction === 'in').forEach(p => {
+      receivedByProject[p.project_id] =
+        (receivedByProject[p.project_id] || 0) + Number(p.amount);
+    });
 
-    // 4. Lifetime Profit vs Pipeline
-    const completedIds = new Set(proj.filter(p => p.status === 'completed').map(p => p.id));
-    const activeProjects = proj.filter(p => p.status === 'scheduled' || p.status === 'live');
-    
-    let lifetimeRevenue = 0;
-    let lifetimeExpenses = 0;
-    let lifetimeMemberPay = 0;
-    
-    // Calculate ACTUAL profit (Deducting expenses and member pay)
-    proj.filter(p => completedIds.has(p.id)).forEach(p => {
-      lifetimeRevenue += Number(p.confirmed_amount || 0);
-      
-      const pExps = exps.filter(e => e.project_id === p.id).reduce((s, e) => s + Number(e.amount), 0);
-      const pMems = pms.filter(m => m.project_id === p.id && m.status !== 'cancelled').reduce((s, m) => s + Number(m.pay_amount), 0);
-      
-      lifetimeExpenses += pExps;
-      lifetimeMemberPay += pMems;
+    const memberPayByProject = {};
+    pms.filter(m => m.status !== 'cancelled').forEach(m => {
+      memberPayByProject[m.project_id] =
+        (memberPayByProject[m.project_id] || 0) + Number(m.pay_amount || 0);
+    });
+
+    const expensesByProject = {};
+    exps.forEach(e => {
+      expensesByProject[e.project_id] =
+        (expensesByProject[e.project_id] || 0) + Number(e.amount || 0);
+    });
+
+    // ---- Split projects ----
+    const completedProjects = proj.filter(p => p.status === 'completed');
+    const activeProjects    = proj.filter(p => p.status === 'scheduled' || p.status === 'live');
+
+    // ---- 3. NET pipeline from active projects ----
+    //   = confirmed − received − member pay − expenses
+    //   (This is what you'll actually keep once the shoot is delivered.)
+    let pipelineGross = 0;
+    let pipelineCosts = 0;
+    let netPipeline   = 0;
+
+    activeProjects.forEach(p => {
+      const confirmed = Number(p.confirmed_amount || 0);
+      const received  = receivedByProject[p.id]  || 0;
+      const memPay    = memberPayByProject[p.id]  || 0;
+      const exp       = expensesByProject[p.id]   || 0;
+
+      pipelineGross += confirmed;
+      pipelineCosts += memPay + exp;
+      netPipeline   += (confirmed - received - memPay - exp);
+    });
+
+    // ---- 4. Outstanding receivable from COMPLETED projects ----
+    //   For completed projects we assume costs are already paid (in cash out).
+    //   So remaining receivable = confirmed − received.
+    let completedReceivable = 0;
+    let lifetimeRevenue     = 0;
+    let lifetimeExpenses    = 0;
+    let lifetimeMemberPay   = 0;
+
+    completedProjects.forEach(p => {
+      const confirmed = Number(p.confirmed_amount || 0);
+      const received  = receivedByProject[p.id] || 0;
+      const memPay    = memberPayByProject[p.id] || 0;
+      const exp       = expensesByProject[p.id]  || 0;
+
+      lifetimeRevenue   += confirmed;
+      lifetimeExpenses  += exp;
+      lifetimeMemberPay += memPay;
+      completedReceivable += Math.max(0, confirmed - received);
     });
 
     const lifetimeNetProfit = lifetimeRevenue - lifetimeExpenses - lifetimeMemberPay;
-    const pipelineValue = activeProjects.reduce((s, p) => s + Number(p.confirmed_amount || 0), 0);
 
-    // FIXED FORMULA: Equipment + True Net Profit + Active Pipeline
-    const totalStudioValue = equipmentValue + lifetimeNetProfit + pipelineValue;
+    // ---- 5. TOTAL STUDIO VALUE (corrected) ----
+    //   Equipment + actual cash + net pipeline + completed receivables
+    const totalStudioValue = equipmentValue + cashInHand + netPipeline + completedReceivable;
 
+    // ---- Render ----
     el.innerHTML = `
       <div class="stat-grid">
         <div class="stat">
@@ -3571,18 +3609,20 @@ SCREENS['studio-value'] = async function(el) {
         </div>
         <div class="stat">
           <div class="label">Cash in Hand</div>
-          <div class="value pos">${fmtMoney(cashInHand)}</div>
+          <div class="value ${cashInHand >= 0 ? 'pos' : 'neg'}">${fmtMoney(cashInHand)}</div>
           <div class="muted small">actual bank balance</div>
         </div>
         <div class="stat">
-          <div class="label">Total Receivables</div>
-          <div class="value ${totalReceivable>0?'neg':''}">${fmtMoney(totalReceivable)}</div>
-          <div class="muted small">unpaid by clients</div>
+          <div class="label">Completed Receivables</div>
+          <div class="value ${completedReceivable > 0 ? 'neg' : ''}">${fmtMoney(completedReceivable)}</div>
+          <div class="muted small">owed from finished shoots</div>
         </div>
         <div class="stat">
-          <div class="label">Active Pipeline</div>
-          <div class="value pos">${fmtMoney(pipelineValue)}</div>
-          <div class="muted small">${activeProjects.length} upcoming shoots</div>
+          <div class="label">Net Active Pipeline</div>
+          <div class="value ${netPipeline >= 0 ? 'pos' : 'neg'}">${fmtMoney(netPipeline)}</div>
+          <div class="muted small">
+            ${activeProjects.length} shoots · gross ${fmtMoney(pipelineGross)} − costs ${fmtMoney(pipelineCosts)}
+          </div>
         </div>
       </div>
 
@@ -3590,27 +3630,27 @@ SCREENS['studio-value'] = async function(el) {
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:2px">Total Studio Value</div>
           <div style="font-size:42px;font-weight:700;margin-top:8px">${fmtMoney(totalStudioValue)}</div>
-          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Net Profit + Pipeline</div>
+          <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Cash + Net Pipeline + Receivables</div>
         </div>
       </div>
 
       <div class="card">
-        <h2>Lifetime Performance (${completedIds.size} completed)</h2>
+        <h2>Lifetime Performance (${completedProjects.length} completed)</h2>
         <table>
           <tr><th style="width:200px">Gross Revenue</th><td class="num">${fmtMoney(lifetimeRevenue)}</td></tr>
           <tr><th style="color:#dc2626;">Less: Expenses</th><td class="num" style="color:#dc2626;">- ${fmtMoney(lifetimeExpenses)}</td></tr>
           <tr><th style="color:#dc2626;">Less: Member Payouts</th><td class="num" style="color:#dc2626;">- ${fmtMoney(lifetimeMemberPay)}</td></tr>
           <tr style="border-top:1px solid #ccc; font-weight:bold;">
-            <th>Net Profit (Completed)</th><td class="num" style="color:#059669;">${fmtMoney(lifetimeNetProfit)}</td>
-          </tr>
+            <th>Net Profit (Completed)</th><td class="num" style="color:#059669;">${fmtMoney(lifetimeNetProfit)}</td></tr>
         </table>
       </div>
 
       <p class="muted small">
         <strong>How this is calculated:</strong><br>
-        • <strong>Total Studio Value</strong> = The value of all your physical gear + money from completed shoots + money guaranteed from upcoming shoots.<br>
-        • <strong>Cash in Hand</strong> = Actual money in your bank (Received minus Paid Out).<br>
-        • <strong>Receivables</strong> = Money clients still owe you for both past and upcoming shoots.
+        • <strong>Net Pipeline</strong> = for each active shoot, the contract value minus what you've already received, minus agreed member pay, minus recorded expenses. That is what you will actually keep once the shoot is delivered.<br>
+        • <strong>Cash in Hand</strong> = actual money in your bank (received − paid out).<br>
+        • <strong>Completed Receivables</strong> = money clients still owe you for finished shoots.<br>
+        • <strong>Total Studio Value</strong> = Equipment + Cash + Net Pipeline + Completed Receivables.
       </p>
     `;
   } catch (err) {
