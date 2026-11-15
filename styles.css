@@ -87,30 +87,36 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0; }
 
 /* ---------- 5. MAIN CONTENT ---------- */
 .content {
-  margin-left: 100px; margin-top: 70px;
-  padding: 24px; max-width: 1400px;
+  margin-left: 110px; /* Pushed slightly more right for breathing room */
+  margin-top: 70px;
+  padding: 32px; /* More padding around the edges */
+  max-width: 1600px; /* Allows the dashboard to stretch wider on big screens */
+  width: 100%;
 }
 
 /* ---------- 6. KPI CARDS ---------- */
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.stat-grid { 
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; 
+}
 .stat {
-  background: #fff; padding: 20px; border-radius: 16px;
+  background: #fff; padding: 24px; border-radius: 16px;
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
 }
-.stat .label { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-.stat .value { font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 8px; }
+.stat .label { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat .value { font-size: 36px; font-weight: 800; color: #0f172a; margin-top: 10px; letter-spacing: -1px; }
 .stat .value.pos { color: #10b981; }
 .stat .value.neg { color: #ef4444; }
 
 /* ---------- 7. DASHBOARD GRID ---------- */
 .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
 .card {
-  background: #fff; border-radius: 16px; padding: 20px;
+  background: #fff; border-radius: 16px; padding: 28px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  width: 100%; /* Forces tables to stretch the full width */
 }
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.card-header h2 { font-size: 16px; font-weight: 700; color: #0f172a; }
+.card-header h2 { font-size: 18px; font-weight: 700; color: #0f172a; }
 .chart-container { position: relative; height: 320px; width: 100%; }
 .right-side-stack { display: flex; flex-direction: column; gap: 20px; }
 .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
@@ -193,19 +199,13 @@ button:disabled { background: #9ca3af; cursor: not-allowed; }
 .btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---------- 7. TABLES ---------- */
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
 th {
-  text-align: left;
-  padding: 10px 8px;
-  font-weight: 600;
-  color: #374151;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: .3px;
+  text-align: left; padding: 16px 12px; font-weight: 600;
+  color: #374151; background: #f9fafb; border-bottom: 1px solid #e5e7eb;
+  font-size: 13px; text-transform: uppercase; letter-spacing: .5px;
 }
-td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+td { padding: 16px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
 tbody tr:hover { background: #fafafa; }
 td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 td.actions { text-align: right; white-space: nowrap; }
