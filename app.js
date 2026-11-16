@@ -1220,7 +1220,7 @@ SCREENS.clients = async function(el) {
             <p>Click "+ Add Client" to start building your list.</p>
           </div>
         `}
-
+`;
     document.getElementById('btn-new-client').onclick = () => openClientForm();
 
     el.querySelectorAll('[data-edit]').forEach(b => {
@@ -2055,7 +2055,7 @@ async function renderList(el) {
           <p>Click "+ New Agreement" to create a contract.</p>
         </div>
       `}
-
+`;
   // Tabs
   el.querySelectorAll('.tabs button').forEach(b => {
     b.onclick = () => { AGREEMENTS_TAB = b.dataset.tab; SCREENS.agreements(el); };
