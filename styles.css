@@ -449,3 +449,20 @@ body {
   backdrop-filter: blur(20px) !important;
   border: 1px solid rgba(255, 255, 255, 0.9) !important;
 }
+/* ============================================================
+   CUSTOM PNG ICONS FOR HEADERS & EMPTY STATES
+   ============================================================ */
+.header-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  opacity: 0.5; /* Faded look */
+  margin-bottom: 16px;
+}
