@@ -2797,8 +2797,10 @@ SCREENS.gadgets = async function(el) {
         <img src="images/gadgets.png" class="empty-icon">
         <h4>No studio gear yet.</h4>
         <p>Add your cameras and equipment here.</p>
-      </div>
+            </div>
     `}
+  </div>
+`; 
 
       document.getElementById('g-new').onclick = () => openGadgetForm();
       panel.querySelectorAll('[data-gedit]').forEach(b => b.onclick = async () => {
