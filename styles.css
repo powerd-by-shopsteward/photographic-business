@@ -472,9 +472,9 @@ td.actions { text-align: right; white-space: nowrap; }
    OPTION 1: CLEAN FROSTED GLASS
    ============================================================ */
 
-/* 1. Pastel Gradient Background (No Image) */
+/* 1. Subtle Cloudy Grey Gradient (Professional) */
 body {
-  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
   background-attachment: fixed !important;
 }
 
