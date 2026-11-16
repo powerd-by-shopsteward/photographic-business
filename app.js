@@ -3837,7 +3837,7 @@ SCREENS['studio-value'] = async function(el) {
         </div>
       </div>
 
-      <div class="card" style="background:linear-gradient(135deg,#1f2937,#374151);color:#fff">
+     <div class="card" style="background:linear-gradient(135deg,#1f2937,#374151) !important;color:#fff !important; backdrop-filter: none !important; border:none !important;">
         <div style="text-align:center;padding:20px 0">
           <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:2px">Total Studio Value</div>
           <div style="font-size:42px;font-weight:700;margin-top:8px">${fmtMoney(totalStudioValue)}</div>
