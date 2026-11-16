@@ -1327,9 +1327,8 @@ function openClientForm(existing) {
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
-    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 }
-
 SCREENS.project = async function(el, projectId) {
   if (!projectId) { el.innerHTML = '<div class="card"><p class="error">No project selected.</p></div>'; return; }
   el.innerHTML = '<div class="loading">Loading project…</div>';
