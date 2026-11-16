@@ -416,18 +416,17 @@ td.actions { text-align: right; white-space: nowrap; }
 
 /* ===== PRINT (for agreements / invoices → Save as PDF) ===== */
 @media print {
-  /* 1. Force exact A4 page size */
   @page {
     size: A4;
     margin: 0;
   }
 
-  /* 2. Hide all the UI completely */
+  /* Hide UI */
   .top-header, .sidebar-pill, .btn-group, #inv-save, #inv-print, #ag-save, #ag-print, a[href^="#"] {
     display: none !important;
   }
 
-  /* 3. Reset the page body */
+  /* Reset Body */
   html, body, .content, .screen-content {
     margin: 0 !important; 
     padding: 0 !important;
@@ -436,18 +435,18 @@ td.actions { text-align: right; white-space: nowrap; }
     overflow: visible !important;
   }
 
-  /* 4. Destroy the 2-column Grid layout in the editor */
+  /* Destroy Grid */
   .screen-content > div {
     display: block !important;
     width: 100% !important;
   }
 
-  /* 5. Hide the left form panel completely */
+  /* Hide Left Form */
   .screen-content > div > div:nth-child(1) {
     display: none !important;
   }
 
-  /* 6. Remove the grey background & padding from the preview wrapper card */
+  /* Remove Card Styling */
   .screen-content > div > div:nth-child(2) .card {
     position: static !important;
     box-shadow: none !important;
@@ -459,25 +458,29 @@ td.actions { text-align: right; white-space: nowrap; }
     width: 100% !important;
   }
 
-  /* 7. Pin the Invoice/Agreement perfectly to the A4 paper */
+  /* Pin to A4 Paper - Adjusted Height to prevent overflow */
   #print-area {
     position: absolute !important;
     top: 0 !important; 
     left: 0 !important;
     
     width: 210mm !important; 
-    height: 297mm !important;
-    padding: 15mm !important;
+    height: 290mm !important; /* Reduced from 297mm to prevent page 2 spillover */
+    padding: 10mm !important; /* Reduced from 15mm */
     box-sizing: border-box !important;
     background: #fff !important;
     z-index: 99999 !important;
-    overflow: hidden !important;
+    
+    /* Stop it from breaking onto a second page */
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
   }
 
-  /* 8. Force tables to fit inside the page */
+  /* Force tables to fit */
   #print-area table {
     width: 100% !important;
     table-layout: fixed !important;
+    page-break-inside: avoid !important;
   }
   #print-area th, #print-area td {
     word-wrap: break-word !important;
