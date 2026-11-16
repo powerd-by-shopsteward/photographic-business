@@ -416,60 +416,71 @@ td.actions { text-align: right; white-space: nowrap; }
 
 /* ===== PRINT (for agreements / invoices → Save as PDF) ===== */
 @media print {
-  /* 1. Force exact A4 page size with no browser margins */
+  /* 1. Force exact A4 page size */
   @page {
     size: A4;
     margin: 0;
   }
 
-  /* 2. Hide EVERYTHING on the screen by default */
-  body * {
-    visibility: hidden;
+  /* 2. Hide all the UI completely */
+  .top-header, .sidebar-pill, .btn-group, #inv-save, #inv-print, #ag-save, #ag-print, a[href^="#"] {
+    display: none !important;
   }
 
-  /* 3. Only make the print area and its contents visible */
-  #print-area, #print-area * {
-    visibility: visible;
+  /* 3. Reset the page body */
+  html, body, .content, .screen-content {
+    margin: 0 !important; 
+    padding: 0 !important;
+    width: 100% !important; 
+    background: #fff !important;
+    overflow: visible !important;
   }
 
-  /* 4. Rip the A4 preview out of the app and pin it perfectly to the paper */
+  /* 4. Destroy the 2-column Grid layout in the editor */
+  .screen-content > div {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* 5. Hide the left form panel completely */
+  .screen-content > div > div:nth-child(1) {
+    display: none !important;
+  }
+
+  /* 6. Remove the grey background & padding from the preview wrapper card */
+  .screen-content > div > div:nth-child(2) .card {
+    position: static !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  /* 7. Pin the Invoice/Agreement perfectly to the A4 paper */
   #print-area {
     position: absolute !important;
+    top: 0 !important; 
     left: 0 !important;
-    top: 0 !important;
     
-    /* Exact A4 size */
-    width: 210mm !important;
+    width: 210mm !important; 
     height: 297mm !important;
-    padding: 15mm !important; /* If printing an agreement, you might want 20mm here */
+    padding: 15mm !important;
     box-sizing: border-box !important;
-    
     background: #fff !important;
-    box-shadow: none !important;
-    border: none !important;
-    margin: 0 !important;
-    transform: none !important; 
+    z-index: 99999 !important;
+    overflow: hidden !important;
   }
-}
-  /* 4. Rip the A4 preview out of the app and pin it to the paper */
-  #print-area {
-    display: flex !important;
-    flex-direction: column !important;
-    
-    /* The Magic Fix: position fixed ignores all parent constraints */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    
-    /* Exact A4 size */
-    width: 210mm !important;
-    height: 297mm !important;
-    padding: 20mm !important;
-    box-sizing: border-box !important;
-    
-    background: #fff !important;
-    z-index: 999999 !important;
-    overflow: hidden !important; /* Stops the blank 2nd page */
+
+  /* 8. Force tables to fit inside the page */
+  #print-area table {
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  #print-area th, #print-area td {
+    word-wrap: break-word !important;
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
