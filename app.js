@@ -3095,8 +3095,10 @@ SCREENS.invoices = async function(el) {
               <img src="images/invoices.png" class="empty-icon">
               <h4>No invoices yet.</h4>
               <p>Your generated invoices will appear here.</p>
-            </div>
+           </div>
           `}
+        </div>
+      `;
 
       document.getElementById('inv-new').onclick = () => openInvoiceForm(projects, methods);
       document.getElementById('pay-new').onclick = () => openPaymentForm(projects, methods, null);
