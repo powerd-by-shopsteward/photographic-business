@@ -472,10 +472,10 @@ td.actions { text-align: right; white-space: nowrap; }
    OPTION 1: CLEAN FROSTED GLASS
    ============================================================ */
 
-/* 1. Lighten the background overlay so the image isn't too dark */
+/* 1. Pastel Gradient Background (No Image) */
 body {
-  background: linear-gradient(rgba(248, 250, 252, 0.85), rgba(248, 250, 252, 0.85)), 
-              url('images/backdrop.png') center/cover no-repeat fixed !important;
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%) !important;
+  background-attachment: fixed !important;
 }
 
 
