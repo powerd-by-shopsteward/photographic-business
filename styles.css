@@ -416,74 +416,58 @@ td.actions { text-align: right; white-space: nowrap; }
 
 /* ===== PRINT (for agreements / invoices → Save as PDF) ===== */
 @media print {
+  /* 1. Force exact A4 page size with no browser margins */
   @page {
     size: A4;
     margin: 0;
   }
 
-  /* Hide UI */
-  .top-header, .sidebar-pill, .btn-group, #inv-save, #inv-print, #ag-save, #ag-print, a[href^="#"] {
-    display: none !important;
+  /* 2. Hide absolutely everything on the page */
+  body * {
+    visibility: hidden;
   }
 
-  /* Reset Body */
-  html, body, .content, .screen-content {
-    margin: 0 !important; 
-    padding: 0 !important;
-    width: 100% !important; 
-    background: #fff !important;
-    overflow: visible !important;
+  /* 3. Make ONLY the print area and its contents visible */
+  #print-area, #print-area * {
+    visibility: visible;
   }
 
-  /* Destroy Grid */
-  .screen-content > div {
-    display: block !important;
-    width: 100% !important;
-  }
-
-  /* Hide Left Form */
-  .screen-content > div > div:nth-child(1) {
-    display: none !important;
-  }
-
-  /* Remove Card Styling */
-  .screen-content > div > div:nth-child(2) .card {
-    position: static !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    max-width: none !important;
-    width: 100% !important;
-  }
-
-  /* Pin to A4 Paper - Adjusted Height to prevent overflow */
+  /* 4. Rip the print area out of the app layout and pin it perfectly to the paper */
   #print-area {
-    position: absolute !important;
-    top: 0 !important; 
+    position: fixed !important; /* Ignores all parent sticky/relative positioning */
     left: 0 !important;
+    top: 0 !important;
     
-    width: 210mm !important; 
-    height: 290mm !important; /* Reduced from 297mm to prevent page 2 spillover */
-    padding: 10mm !important; /* Reduced from 15mm */
-    box-sizing: border-box !important;
+    /* Exact A4 dimensions - slightly reduced height to prevent spilling to page 2 */
+    width: 210mm !important;
+    height: 295mm !important; 
+    padding: 12mm !important; /* Tighter padding to ensure everything fits */
+    
+    margin: 0 !important;
     background: #fff !important;
+    box-shadow: none !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important; /* Stops the blank 2nd page from generating */
     z-index: 99999 !important;
-    
-    /* Stop it from breaking onto a second page */
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
   }
 
-  /* Force tables to fit */
+  /* 5. Force tables to fit inside the page and never break across pages */
   #print-area table {
     width: 100% !important;
     table-layout: fixed !important;
     page-break-inside: avoid !important;
   }
+
   #print-area th, #print-area td {
     word-wrap: break-word !important;
+  }
+
+  /* 6. Remove any background colors from wrapping cards so they don't print as grey blocks */
+  .card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
