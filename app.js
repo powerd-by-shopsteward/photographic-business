@@ -1182,8 +1182,10 @@ SCREENS.clients = async function(el) {
 
     el.innerHTML = `
       <div class="card">
-        <div class="card-header">
-          <h2>Clients (${clients.length})</h2>
+                <div class="card-header">
+          <h2 style="display:flex; align-items:center; margin:0;">
+            <img src="images/clients.png" class="header-icon"> Clients (${clients.length})
+          </h2>
           <button id="btn-new-client">+ Add Client</button>
         </div>
         ${clients.length ? `
@@ -1211,9 +1213,13 @@ SCREENS.clients = async function(el) {
               </tbody>
             </table>
           </div>
-        ` : `<p class="empty">No clients yet. Click "+ Add Client" to start.</p>`}
-      </div>
-    `;
+                ` : `
+          <div class="empty-state">
+            <img src="images/clients.png" class="empty-icon">
+            <h4>No clients yet.</h4>
+            <p>Click "+ Add Client" to start building your list.</p>
+          </div>
+        `}
 
     document.getElementById('btn-new-client').onclick = () => openClientForm();
 
@@ -2011,8 +2017,10 @@ async function renderList(el) {
       <button class="${AGREEMENTS_TAB==='templates'?'active':''}" data-tab="templates">Templates</button>
     </div>
     <div class="card">
-      <div class="card-header">
-        <h2>Agreements</h2>
+            <div class="card-header">
+        <h2 style="display:flex; align-items:center; margin:0;">
+          <img src="images/agreements.png" class="header-icon"> Agreements
+        </h2>
         <div class="btn-group">
           <button id="ag-new">+ New Agreement</button>
         </div>
@@ -2040,9 +2048,13 @@ async function renderList(el) {
             </tbody>
           </table>
         </div>
-      ` : '<p class="empty">No agreements yet. Click "+ New Agreement".</p>'}
-    </div>
-  `;
+           ` : `
+        <div class="empty-state">
+          <img src="images/agreements.png" class="empty-icon">
+          <h4>No agreements yet.</h4>
+          <p>Click "+ New Agreement" to create a contract.</p>
+        </div>
+      `}
 
   // Tabs
   el.querySelectorAll('.tabs button').forEach(b => {
@@ -2753,8 +2765,10 @@ SCREENS.gadgets = async function(el) {
         s + Number(g.current_value || g.purchase_price || 0), 0);
       panel.innerHTML = `
         <div class="card">
-          <div class="card-header">
-            <h2>Studio Gear</h2>
+                    <div class="card-header">
+            <h2 style="display:flex; align-items:center; margin:0;">
+              <img src="images/gadgets.png" class="header-icon"> Studio Gear
+            </h2>
             <button id="g-new">+ Add Gadget</button>
           </div>
           <p class="muted small mb-2">Total current value: <strong>${fmtMoney(totalValue)}</strong></p>
@@ -2779,8 +2793,13 @@ SCREENS.gadgets = async function(el) {
                 </tr>`).join('')}
               </tbody>
             </table></div>
-          ` : '<p class="empty">No studio gear yet.</p>'}
-        </div>`;
+          ` : `
+            <div class="empty-state">
+              <img src="images/gadgets.png" class="empty-icon">
+              <h4>No studio gear yet.</h4>
+              <p>Add your cameras and equipment here.</p>
+            </div>
+          `}
 
       document.getElementById('g-new').onclick = () => openGadgetForm();
       panel.querySelectorAll('[data-gedit]').forEach(b => b.onclick = async () => {
@@ -3037,8 +3056,10 @@ SCREENS.invoices = async function(el) {
           <div class="stat"><div class="label">Total Paid Out</div><div class="value neg">${fmtMoney(outSum)}</div></div>
         </div>
         <div class="card">
-          <div class="card-header">
-            <h2>Invoices</h2>
+                    <div class="card-header">
+            <h2 style="display:flex; align-items:center; margin:0;">
+              <img src="images/invoices.png" class="header-icon"> Invoices
+            </h2>
             <div class="btn-group">
               <button id="inv-new">+ New Invoice</button>
               <button id="pay-new" class="btn-secondary">+ Record Payment</button>
@@ -3067,8 +3088,13 @@ SCREENS.invoices = async function(el) {
                 </tr>`).join('')}
               </tbody>
             </table></div>
-          ` : '<p class="empty">No invoices yet.</p>'}
-        </div>`;
+                   ` : `
+            <div class="empty-state">
+              <img src="images/invoices.png" class="empty-icon">
+              <h4>No invoices yet.</h4>
+              <p>Your generated invoices will appear here.</p>
+            </div>
+          `}
 
       document.getElementById('inv-new').onclick = () => openInvoiceForm(projects, methods);
       document.getElementById('pay-new').onclick = () => openPaymentForm(projects, methods, null);
