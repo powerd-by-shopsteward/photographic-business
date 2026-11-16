@@ -478,14 +478,6 @@ body {
               url('images/backdrop.png') center/cover no-repeat fixed !important;
 }
 
-/* 2. Make the cards 85% white so text is perfectly readable */
-.card, .stat, .modal {
-  background: rgba(255, 255, 255, 0.85) !important; 
-  backdrop-filter: blur(20px) !important; 
-  -webkit-backdrop-filter: blur(20px) !important; 
-  border: 1px solid rgba(255, 255, 255, 0.9) !important; 
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
-}
 
 
 /* ============================================================
@@ -554,3 +546,58 @@ body {
 .kpi-received { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .kpi-receivable { background: linear-gradient(135deg, #f59e0b, #d97706); }
 .kpi-upcoming { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+
+/* ============================================================
+   UNIVERSAL PURE GLASS UI
+   ============================================================ */
+
+/* 1. Standard Cards & Modals */
+.card, .modal {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0.2) 100%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  border: none !important;
+  box-shadow: 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8), /* Inner bright edge */
+    0 8px 32px 0 rgba(0, 0, 0, 0.1) !important; /* Soft outer shadow */
+}
+
+/* 2. Top Header */
+.top-header {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%) !important;
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 3. KPI Cards (Colored Glass) */
+/* Keep the colors, but add the glass blur and reflection */
+.kpi-card {
+  backdrop-filter: blur(24px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(150%) !important;
+  border: none !important;
+  box-shadow: 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6), 
+    0 8px 32px 0 rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Translucent versions of your KPI colors */
+.kpi-live { background: linear-gradient(135deg, rgba(16, 185, 129, 0.85), rgba(5, 150, 105, 0.6)) !important; }
+.kpi-received { background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(37, 99, 235, 0.6)) !important; }
+.kpi-receivable { background: linear-gradient(135deg, rgba(245, 158, 11, 0.85), rgba(217, 119, 6, 0.6)) !important; }
+.kpi-upcoming { background: linear-gradient(135deg, rgba(139, 92, 246, 0.85), rgba(109, 40, 217, 0.6)) !important; }
+
+/* 4. Fix Tables inside the glass cards */
+/* Make table headers slightly transparent so they don't break the glass look */
+th {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+tbody tr:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Make sure text stays readable */
+.card, .modal, .kpi-card, .top-header {
+  color: #1e293b;
+}
