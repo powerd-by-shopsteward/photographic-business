@@ -2806,7 +2806,7 @@ SCREENS.gadgets = async function(el) {
         if (data) openGadgetForm(data);
       });
       panel.querySelectorAll('[data-gdel]').forEach(b => b.onclick = async () => {
-        if (!confirm(`Delete "${b.dataset.gname}"?`)) return;
+        if (!confirm(`Delete ${b.dataset.gname}?`)) return;
         const { error } = await db.from('gadgets').delete().eq('id', b.dataset.gdel);
         if (error) { alert(error.message); return; }
         SCREENS.gadgets(el);
