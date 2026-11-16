@@ -70,10 +70,11 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0; }
   white-space: nowrap;
 }
 .header-title h1 {
-  font-size: 22px; 
-  font-weight: 800; 
+  font-family: 'Cinzel', serif; /* Luxury Serif Font */
+  font-size: 24px; /* Slightly larger for serif fonts */
+  font-weight: 700; 
   color: #0f172a; 
-  letter-spacing: -0.5px; 
+  letter-spacing: 2px; /* Wider spacing for elegance */
   margin: 0;
   text-transform: uppercase;
 }
