@@ -217,22 +217,41 @@ SCREENS.dashboard = async function(el) {
     const chartData = Object.values(monthMap);
 
     el.innerHTML = `
-      <div class="stat-grid">
-        <div class="stat">
+            <div class="stat-grid">
+        <!-- Card 1: Live Now -->
+        <div class="kpi-card kpi-live">
           <div class="label">Live Now</div>
           <div class="value">${liveCount}</div>
+          <svg class="bg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 7l-7 5 7 5V7z"></path><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
         </div>
-        <div class="stat">
+
+        <!-- Card 2: Received This Month -->
+        <div class="kpi-card kpi-received">
           <div class="label">Received This Month</div>
-          <div class="value pos">${fmtMoney(monthInTotal)}</div>
+          <div class="value">${fmtMoney(monthInTotal)}</div>
+          <svg class="bg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"></rect><circle cx="12" cy="12" r="2"></circle><path d="M6 12h.01M18 12h.01"></path>
+          </svg>
         </div>
-        <div class="stat">
+
+        <!-- Card 3: Total Receivable -->
+        <div class="kpi-card kpi-receivable">
           <div class="label">Total Receivable</div>
-          <div class="value ${receivable > 0 ? 'neg' : ''}">${fmtMoney(receivable)}</div>
+          <div class="value">${fmtMoney(receivable)}</div>
+          <svg class="bg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
         </div>
-        <div class="stat">
+
+        <!-- Card 4: Upcoming Shoots -->
+        <div class="kpi-card kpi-upcoming">
           <div class="label">Upcoming Shoots</div>
           <div class="value">${upcoming.length}</div>
+          <svg class="bg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path>
+          </svg>
         </div>
       </div>
 
