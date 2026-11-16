@@ -422,25 +422,35 @@ td.actions { text-align: right; white-space: nowrap; }
     margin: 0;
   }
 
-  /* 2. Completely hide the app interface and form */
-  .sidebar, .topbar, button, .btn-group, #ag-layout > div:first-child {
-    display: none !important;
+  /* 2. Hide EVERYTHING on the screen by default */
+  body * {
+    visibility: hidden;
   }
 
-  /* 3. Destroy the grid layout so it stops constraining the width */
-  html, body, .shell, .content, #screen-agreement, #ag-layout, #ag-layout > div:last-child, #ag-layout > div:last-child > .card {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
+  /* 3. Only make the print area and its contents visible */
+  #print-area, #print-area * {
+    visibility: visible;
+  }
+
+  /* 4. Rip the A4 preview out of the app and pin it perfectly to the paper */
+  #print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    
+    /* Exact A4 size */
+    width: 210mm !important;
+    height: 297mm !important;
+    padding: 15mm !important; /* If printing an agreement, you might want 20mm here */
+    box-sizing: border-box !important;
+    
+    background: #fff !important;
     box-shadow: none !important;
     border: none !important;
-    transform: none !important;
+    margin: 0 !important;
+    transform: none !important; 
   }
-
+}
   /* 4. Rip the A4 preview out of the app and pin it to the paper */
   #print-area {
     display: flex !important;
