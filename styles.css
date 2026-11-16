@@ -102,9 +102,15 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0; }
 
 /* ---------- 4. FLOATING PILL SIDEBAR (PURE GLASS) ---------- */
 .sidebar-pill {
-  position: fixed; top: 90px; left: 20px;
+  position: fixed; 
+  
+  /* THIS IS THE MAGIC FIX */
+  top: 50%; 
+  transform: translateY(-50%); 
+  
+  left: 20px;
   height: auto;
-  max-height: calc(100vh - 110px); 
+  max-height: calc(100vh - 40px); /* Leaves a safe 20px gap at top/bottom if screen is small */
   width: 70px; 
   
   /* Highly transparent gradient background */
@@ -123,9 +129,8 @@ hr { border: 0; border-top: 1px solid #e5e7eb; margin: 12px 0; }
   padding: 16px 0; z-index: 90;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden; 
-  border: none; /* Removed the solid border */
+  border: none; 
 }
-
 /* The Diagonal Glass Reflection/Glare */
 .sidebar-pill::before {
   content: "";
