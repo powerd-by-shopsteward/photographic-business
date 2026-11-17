@@ -741,3 +741,10 @@ tbody tr:hover {
 .dashboard-bottom-grid .card p.muted {
   margin: auto !important;
 }
+/* Change ONLY the big numbers */
+.stat .value, 
+.kpi-card .value {
+  font-family: 'Outfit', sans-serif !important;
+  font-variant-numeric: tabular-nums; /* Makes all numbers align perfectly */
+  letter-spacing: -0.5px !important;
+}
