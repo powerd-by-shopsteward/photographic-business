@@ -684,3 +684,47 @@ tbody tr:hover {
   justify-content: flex-end !important;
   flex-wrap: wrap !important; 
 }
+/* ============================================================
+   FIX DASHBOARD GRID ALIGNMENT & HEIGHTS
+   ============================================================ */
+
+/* 1. Force the middle grid to stretch items to full height */
+.dashboard-grid {
+  align-items: stretch !important;
+}
+
+/* 2. Make the right-side column fill the entire height */
+.right-side-stack {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* 3. Make the two right cards share the height perfectly (50/50) */
+.right-side-stack .card {
+  flex: 1 !important; 
+  display: flex !important;
+  flex-direction: column !important;
+  margin-bottom: 0 !important;
+}
+
+/* 4. Vertically center the "Nothing live right now" text */
+.right-side-stack .card p.muted {
+  margin: auto !important; 
+  padding: 0 !important;
+}
+
+/* 5. Fix the bottom row to stretch and center empty text */
+.dashboard-bottom-grid {
+  align-items: stretch !important;
+}
+
+.dashboard-bottom-grid .card {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.dashboard-bottom-grid .card p.muted {
+  margin: auto !important;
+  padding: 0 !important;
+}
