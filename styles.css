@@ -643,3 +643,9 @@ tbody tr:hover {
 .content {
   margin-top: 100px !important;
 }
+/* Stop empty cards from stretching vertically */
+#ptab .card, 
+.screen-content .card {
+  height: fit-content !important;
+  align-self: start !important;
+}
