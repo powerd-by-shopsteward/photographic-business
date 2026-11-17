@@ -685,46 +685,63 @@ tbody tr:hover {
   flex-wrap: wrap !important; 
 }
 /* ============================================================
-   FIX DASHBOARD GRID ALIGNMENT & HEIGHTS
+   FINAL DASHBOARD GRID PERFECTION
    ============================================================ */
 
-/* 1. Force the middle grid to stretch items to full height */
+/* 1. Make the Chart significantly taller */
+.chart-container {
+  height: 450px !important; /* Increased from 320px to fill the page */
+  width: 100% !important;
+}
+
+/* 2. Force the left and right columns to be the exact same height */
 .dashboard-grid {
   align-items: stretch !important;
 }
 
-/* 2. Make the right-side column fill the entire height */
+/* 3. Right Side: Attach the cards perfectly */
 .right-side-stack {
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
+  gap: 0 !important; /* Removes the gap so they attach */
 }
 
-/* 3. Make the two right cards share the height perfectly (50/50) */
+/* 4. Share height 50/50 and remove inner rounded corners */
 .right-side-stack .card {
   flex: 1 !important; 
-  display: flex !important;
-  flex-direction: column !important;
   margin-bottom: 0 !important;
+  border-radius: 0 !important; /* Makes them look like one attached block */
 }
 
-/* 4. Vertically center the "Nothing live right now" text */
-.right-side-stack .card p.muted {
-  margin: auto !important; 
-  padding: 0 !important;
+/* Add rounding ONLY to the top card */
+.right-side-stack .card:first-child {
+  border-top-left-radius: 16px !important;
+  border-top-right-radius: 16px !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; /* Subtle divider line */
 }
 
-/* 5. Fix the bottom row to stretch and center empty text */
+/* Add rounding ONLY to the bottom card */
+.right-side-stack .card:last-child {
+  border-bottom-left-radius: 16px !important;
+  border-bottom-right-radius: 16px !important;
+}
+
+/* 5. Fix Bottom Row: Give cards a proper height and center text */
 .dashboard-bottom-grid {
   align-items: stretch !important;
+  margin-top: 24px !important;
 }
 
 .dashboard-bottom-grid .card {
+  height: 100% !important;
+  min-height: 220px !important; /* Gives the bottom cards more presence */
+  margin-bottom: 0 !important;
   display: flex !important;
   flex-direction: column !important;
 }
 
+/* Vertically center the "All invoices are paid" text */
 .dashboard-bottom-grid .card p.muted {
   margin: auto !important;
-  padding: 0 !important;
 }
