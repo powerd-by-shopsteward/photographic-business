@@ -649,3 +649,38 @@ tbody tr:hover {
   height: fit-content !important;
   align-self: start !important;
 }
+/* ============================================================
+   UNIVERSAL FIX: ALIGN CARD HEADERS & BUTTONS
+   ============================================================ */
+.card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important; /* Stops the button from dropping to the next line */
+  gap: 16px !important; /* Adds space between the text and the button */
+  margin-bottom: 20px !important;
+  width: 100% !important;
+}
+
+/* Make the title take up available space but truncate if it gets too long */
+.card-header h2 {
+  margin: 0 !important;
+  flex: 1 1 auto !important; 
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important; 
+}
+
+/* Ensure buttons and button groups don't shrink and stay on the right */
+.card-header > button,
+.card-header > .btn-group {
+  flex-shrink: 0 !important;
+  width: auto !important;
+}
+
+/* If there's a btn-group (like in Invoices), keep it aligned right */
+.card-header > .btn-group {
+  display: flex !important;
+  justify-content: flex-end !important;
+  flex-wrap: wrap !important; 
+}
