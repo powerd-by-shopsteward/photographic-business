@@ -699,32 +699,28 @@ tbody tr:hover {
   align-items: stretch !important;
 }
 
-/* 3. Right Side: Attach the cards perfectly */
+/* 3. Right Side: Separate cards but keep the stretch */
 .right-side-stack {
   height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 0 !important; /* Removes the gap so they attach */
+  gap: 20px !important; /* Brings back the space between them */
 }
 
-/* 4. Share height 50/50 and remove inner rounded corners */
+/* 4. Share height 50/50 */
 .right-side-stack .card {
   flex: 1 !important; 
   margin-bottom: 0 !important;
-  border-radius: 0 !important; /* Makes them look like one attached block */
+  border-radius: 16px !important; /* Brings back the rounded corners on all sides */
 }
 
-/* Add rounding ONLY to the top card */
+/* Remove the attached borders */
 .right-side-stack .card:first-child {
-  border-top-left-radius: 16px !important;
-  border-top-right-radius: 16px !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important; /* Subtle divider line */
+  border-bottom: 1px solid #f1f5f9 !important; /* Restore normal card border */
 }
 
-/* Add rounding ONLY to the bottom card */
 .right-side-stack .card:last-child {
-  border-bottom-left-radius: 16px !important;
-  border-bottom-right-radius: 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
 }
 
 /* 5. Fix Bottom Row: Give cards a proper height and center text */
