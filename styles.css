@@ -421,47 +421,54 @@ td.actions { text-align: right; white-space: nowrap; }
     margin: 0;
   }
 
-  /* 1. Hide everything on the page by default */
+  /* 1. Hide everything by default */
   body * {
     visibility: hidden;
   }
 
-  /* 2. Make ONLY the print area and its contents visible */
+  /* 2. Make ONLY the print area visible */
   #print-area, #print-area * {
     visibility: visible;
   }
 
-  /* 3. Rip the print area out of the app layout and pin it to the top-left */
-  #print-area {
-    position: fixed !important; /* Fixed ignores the grey wrapper and sticky positioning */
-    left: 0 !important;
-    top: 0 !important;
-    
-    width: 210mm !important;
-    height: 297mm !important; /* Exact A4 height */
-    padding: 15mm !important; /* Adjust this number if you want more/less white space inside the paper */
-    
+  /* 3. Destroy the app layout and strip all backgrounds/filters from parents */
+  html, body, .content, .screen-content, .screen-content > div, .card {
     margin: 0 !important;
-    background: #fff !important;
-    box-shadow: none !important;
-    border: none !important;
-    box-sizing: border-box !important;
-    overflow: hidden !important;
-    page-break-inside: avoid !important;
-    z-index: 99999 !important;
-
-    /* Ensure flexbox works to push signatures to bottom */
-    display: flex !important;
-    flex-direction: column !important;
-  }
-
-  /* 4. Ensure the wrapper card doesn't print its grey background */
-  .card {
+    padding: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
     border: none !important;
-    padding: 0 !important;
+    display: block !important; /* Destroys the grid layout */
+    
+    /* CRITICAL FIX: These properties trap 'fixed' elements inside their parents */
+    transform: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* 4. Completely DELETE the left form panel so it takes up 0 space */
+  .screen-content > div > div:first-child {
+    display: none !important;
+  }
+
+  /* 5. Pin the paper exactly to the top-left of the print page */
+  #print-area {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    
+    /* Exact A4 size */
+    width: 210mm !important;
+    height: 297mm !important;
+    padding: 15mm !important; 
+    
     margin: 0 !important;
+    background: #fff !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    z-index: 999999 !important;
+    
+    page-break-inside: avoid !important;
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
