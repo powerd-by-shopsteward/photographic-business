@@ -3355,7 +3355,7 @@ async function printInvoice(inv) {
   let taxAmt = subtotal * (taxPct / 100);
   let grandTotal = subtotal + taxAmt;
   let words = meta.amount_words || numberToWords(Math.round(grandTotal));
-  let upiLink = studio.upi_id ? `upi://pay?pa=${encodeURIComponent(studio.upi_id)}&pn=${encodeURIComponent(studio.name)}` : '';
+   let upiLink = studio.upi_id ? `upi://pay?pa=${encodeURIComponent(studio.upi_id)}&pn=${encodeURIComponent(studio.name)}&am=${grandTotal}&cu=INR` : '';
   let contact = meta.contact_phone || studio.phone || '';
 
   const w = window.open('', '_blank');
@@ -3462,7 +3462,7 @@ async function printInvoice(inv) {
               </div>
               
               <div style="display:flex; gap:15px; align-items:flex-start;">
-                ${upiLink ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(upiLink)}" style="width:60px; height:60px; border:1px solid #ccc;">` : ''}
+                <img id="print-qr-code" src="" style="width:70px; height:70px; border:1px solid #ccc; display:none;">
                 <div>
                   <div style="font-weight:bold; margin-bottom:2px;">Bank Transfer / Direct UPI</div>
                   <div style="color:#666; font-size:10px;">
@@ -4756,7 +4756,7 @@ SCREENS.invoice = async function(el, id) {
                     </div>
                     
                     <div style="display:flex; gap:15px; align-items:flex-start;">
-                      ${upiLink ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(upiLink)}" style="width:60px; height:60px; border:1px solid #ccc;">` : ''}
+                     ${upiLink ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=${encodeURIComponent(upiLink)}" style="width:70px; height:70px; border:1px solid #ccc;">` : ''}
                       <div>
                         <div style="font-weight:bold; margin-bottom:2px;">Bank Transfer / Direct UPI</div>
                         <div style="color:#666; font-size:10px;">
@@ -4872,6 +4872,18 @@ SCREENS.invoice = async function(el, id) {
       const taxPct = Number(document.getElementById('inv-tax').value || 0);
       const taxAmt = subtotal * (taxPct / 100);
       const grandTotal = subtotal + taxAmt;
+
+            // Generate dynamic UPI QR Code Link
+      const upiLink = studio.upi_id ? `upi://pay?pa=${encodeURIComponent(studio.upi_id)}&pn=${encodeURIComponent(studio.name)}&am=${grandTotal}&cu=INR` : '';
+      const qrImg = document.getElementById('print-qr-code');
+      if (qrImg) {
+        if (upiLink) {
+          qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=1&data=${encodeURIComponent(upiLink)}`;
+          qrImg.style.display = 'block';
+        } else {
+          qrImg.style.display = 'none';
+        }
+      }
 
       document.getElementById('print-subtotal').textContent = '₹' + fmtMoney(subtotal);
       document.getElementById('print-tax').textContent = '₹' + fmtMoney(taxAmt);
