@@ -422,37 +422,73 @@ td.actions { text-align: right; white-space: nowrap; }
     margin: 0;
   }
 
-  /* 2. Hide absolutely everything on the page */
+  /* 2. Kill all backgrounds and margins */
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* 3. Hide absolutely everything on the page */
   body * {
     visibility: hidden;
   }
 
-  /* 3. Make ONLY the print area and its contents visible */
+  /* 4. Make ONLY the print area and its contents visible */
   #print-area, #print-area * {
     visibility: visible;
   }
 
-  /* 4. Rip the print area out of the app layout and pin it perfectly to the paper */
+  /* 5. DESTROY THE GRID LAYOUT */
+  .screen-content > div {
+    display: block !important; /* Breaks the 2-column grid */
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* 6. Hide the left form panel completely */
+  .screen-content > div > div:nth-child(1) {
+    display: none !important;
+  }
+
+  /* 7. Remove the grey background from the preview wrapper */
+  .screen-content > div > div:nth-child(2) .card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    position: static !important;
+  }
+
+  /* 8. Pin the Invoice/Agreement perfectly to the A4 paper */
   #print-area {
-    position: fixed !important; /* Ignores all parent sticky/relative positioning */
+    position: absolute !important; /* Absolute ignores parent grids */
     left: 0 !important;
     top: 0 !important;
     
-    /* Exact A4 dimensions - slightly reduced height to prevent spilling to page 2 */
+    /* Exact A4 dimensions - slightly reduced to prevent spilling to page 2 */
     width: 210mm !important;
-    height: 295mm !important; 
-    padding: 12mm !important; /* Tighter padding to ensure everything fits */
+    height: 296mm !important; 
+    padding: 15mm !important; /* Adjust padding as needed */
     
     margin: 0 !important;
     background: #fff !important;
     box-shadow: none !important;
     border: none !important;
     box-sizing: border-box !important;
-    overflow: hidden !important; /* Stops the blank 2nd page from generating */
+    overflow: hidden !important; 
     z-index: 99999 !important;
+    
+    /* Stop it from breaking onto a second page */
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
   }
 
-  /* 5. Force tables to fit inside the page and never break across pages */
+  /* 9. Force tables to fit inside the page and never break across pages */
   #print-area table {
     width: 100% !important;
     table-layout: fixed !important;
@@ -461,13 +497,6 @@ td.actions { text-align: right; white-space: nowrap; }
 
   #print-area th, #print-area td {
     word-wrap: break-word !important;
-  }
-
-  /* 6. Remove any background colors from wrapping cards so they don't print as grey blocks */
-  .card {
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
