@@ -421,81 +421,75 @@ td.actions { text-align: right; white-space: nowrap; }
     margin: 0;
   }
 
-  /* Kill all backgrounds and margins */
-  html, body {
-    background: #fff !important;
+  /* 1. Reset everything */
+  html, body, .content, .screen-content {
     margin: 0 !important;
     padding: 0 !important;
-    height: auto !important;
+    width: 100% !important;
+    background: #fff !important;
     overflow: visible !important;
   }
 
-  /* Hide everything by default */
+  /* 2. Hide everything by default */
   body * {
     visibility: hidden;
   }
 
-  /* Only make the print area visible */
+  /* 3. Make ONLY the print area visible */
   #print-area, #print-area * {
     visibility: visible;
   }
 
-  /* Destroy the app's grid layout */
-  .screen-content > div {
-    display: block !important; 
+  /* 4. Remove ALL margins from parent containers so no space is reserved */
+  .screen-content > div,
+  .screen-content > div > div,
+  .card {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-  }
-
-  /* Hide the left form panel completely */
-  .screen-content > div > div:nth-child(1) {
-    display: none !important;
-  }
-
-  /* Remove grey wrapper background */
-  .screen-content > div > div:nth-child(2) .card {
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
     position: static !important;
   }
 
-  /* Pin the document perfectly to the A4 paper */
+  /* 5. Hide the toolbar and the left form panel COMPLETELY */
+  .screen-content > div:first-child { 
+    display: none !important; 
+  }
+  .screen-content > div:nth-child(2) > div:nth-child(1) { 
+    display: none !important; 
+  }
+
+  /* 6. Expand the right preview panel to full width */
+  .screen-content > div:nth-child(2) {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* 7. Pin the print area to the top left */
   #print-area {
-    position: absolute !important; 
-    left: 0 !important;
+    position: absolute !important;
     top: 0 !important;
+    left: 0 !important;
     
-    /* THE FIX: Override inline min-height and give a safe buffer */
-    min-height: 0 !important; 
-    height: 285mm !important; /* Safe height, well under 297mm */
-    max-height: 285mm !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    padding: 12mm !important; /* Reduced from 20mm to fit everything on page 1 */
     
-    padding: 12mm !important; 
     margin: 0 !important;
     background: #fff !important;
     box-shadow: none !important;
     border: none !important;
     box-sizing: border-box !important;
-    overflow: hidden !important; 
-    z-index: 99999 !important;
-    
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
-  }
-
-  /* Force tables to fit and never break */
-  #print-area table {
-    width: 100% !important;
-    table-layout: fixed !important;
+    overflow: hidden !important;
     page-break-inside: avoid !important;
   }
 
-  #print-area th, #print-area td {
-    word-wrap: break-word !important;
+  /* 8. Squeeze internal margins inside the document to prevent spilling */
+  #print-area div[style*="margin-top"] {
+    margin-top: 10px !important;
+  }
+  
+  /* 9. Ensure flexbox doesn't push the footer off the page */
+  #print-area > div {
+    flex-grow: 0 !important; 
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
