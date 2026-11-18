@@ -421,57 +421,25 @@ td.actions { text-align: right; white-space: nowrap; }
     margin: 0;
   }
 
-  /* 1. Reset everything */
-  html, body, .content, .screen-content {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    background: #fff !important;
-    overflow: visible !important;
-  }
-
-  /* 2. Hide everything by default */
+  /* 1. Hide everything on the page by default */
   body * {
     visibility: hidden;
   }
 
-  /* 3. Make ONLY the print area visible */
+  /* 2. Make ONLY the print area and its contents visible */
   #print-area, #print-area * {
     visibility: visible;
   }
 
-  /* 4. Remove ALL margins from parent containers so no space is reserved */
-  .screen-content > div,
-  .screen-content > div > div,
-  .card {
-    margin: 0 !important;
-    padding: 0 !important;
-    position: static !important;
-  }
-
-  /* 5. Hide the toolbar and the left form panel COMPLETELY */
-  .screen-content > div:first-child { 
-    display: none !important; 
-  }
-  .screen-content > div:nth-child(2) > div:nth-child(1) { 
-    display: none !important; 
-  }
-
-  /* 6. Expand the right preview panel to full width */
-  .screen-content > div:nth-child(2) {
-    display: block !important;
-    width: 100% !important;
-  }
-
-  /* 7. Pin the print area to the top left */
+  /* 3. Rip the print area out of the app layout and pin it to the top-left */
   #print-area {
-    position: absolute !important;
-    top: 0 !important;
+    position: fixed !important; /* Fixed ignores the grey wrapper and sticky positioning */
     left: 0 !important;
+    top: 0 !important;
     
     width: 210mm !important;
-    height: 297mm !important;
-    padding: 12mm !important; /* Reduced from 20mm to fit everything on page 1 */
+    height: 297mm !important; /* Exact A4 height */
+    padding: 15mm !important; /* Adjust this number if you want more/less white space inside the paper */
     
     margin: 0 !important;
     background: #fff !important;
@@ -480,16 +448,20 @@ td.actions { text-align: right; white-space: nowrap; }
     box-sizing: border-box !important;
     overflow: hidden !important;
     page-break-inside: avoid !important;
+    z-index: 99999 !important;
+
+    /* Ensure flexbox works to push signatures to bottom */
+    display: flex !important;
+    flex-direction: column !important;
   }
 
-  /* 8. Squeeze internal margins inside the document to prevent spilling */
-  #print-area div[style*="margin-top"] {
-    margin-top: 10px !important;
-  }
-  
-  /* 9. Ensure flexbox doesn't push the footer off the page */
-  #print-area > div {
-    flex-grow: 0 !important; 
+  /* 4. Ensure the wrapper card doesn't print its grey background */
+  .card {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 }
 /* ---------- 12. DASHBOARD BOTTOM GRID ---------- */
