@@ -457,11 +457,11 @@ SCREENS.projects = async function(el) {
               <tbody>
                 ${filtered.map(p => `
                   <tr style="cursor:pointer" onclick="location.hash='#project/${p.id}'">
-                    <td><strong>${p.name}</strong></td>
-                    <td>${p.client?.name || '—'}</td>
-                    <td>${fmtDate(p.start_date)}</td>
-                    <td><span class="${badgeClass(p.status)}">${p.status}</span></td>
-                    <td class="num">${fmtMoney(p.confirmed_amount)}</td>
+                   <td data-label="Project"><strong>${p.name}</strong></td>
+<td data-label="Client">${p.client?.name || '—'}</td>
+<td data-label="Date">${fmtDate(p.start_date)}</td>
+<td data-label="Status"><span class="${badgeClass(p.status)}">${p.status}</span></td>
+<td data-label="Amount" class="num">${fmtMoney(p.confirmed_amount)}</td>
                   </tr>
                 `).join('')}
               </tbody>
@@ -991,13 +991,14 @@ SCREENS.members = async function(el) {
                     : '<span class="muted small">none</span>';
 
                   return `<tr>
-                    <td><strong>${m.name}</strong>${m.active ? '' : ' <span class="badge badge-cancelled">inactive</span>'}</td>
-                    <td>${m.phone || '—'}</td>
-                    <td>${m.role || '—'}</td>
-                    <td>${loginCell}</td>
-                    <td class="num">${fmtMoney(s.owed)}</td>
-                    <td class="num" style="color:#059669;">${fmtMoney(s.paid)}</td>
-                    <td class="num" style="font-weight:bold; color:${balance > 0 ? '#dc2626' : '#059669'};">
+                   <td data-label="Name"><strong>${m.name}</strong>...</td>
+<td data-label="Phone">${m.phone || '—'}</td>
+<td data-label="Role">${m.role || '—'}</td>
+<td data-label="Login">${loginCell}</td>
+<td data-label="Total Owed" class="num">${fmtMoney(s.owed)}</td>
+<td data-label="Total Paid" class="num" style="color:#059669;">${fmtMoney(s.paid)}</td>
+<td data-label="Balance Due" class="num" style="font-weight:bold; color:${balance > 0 ? '#dc2626' : '#059669'};">${fmtMoney(balance)}</td>
+<td data-label="Actions" class="actions">...</td>
                       ${fmtMoney(balance)}
                     </td>
                     <td class="actions">
@@ -1218,12 +1219,12 @@ SCREENS.clients = async function(el) {
                 ${clients.map(c => {
                   const s = stats[c.id] || { count: 0, total: 0 };
                   return `<tr>
-                    <td><strong>${c.name}</strong></td>
-                    <td>${c.phone || '—'}</td>
-                    <td>${c.email || '—'}</td>
-                    <td class="num">${s.count}</td>
-                    <td class="num">${s.total ? fmtMoney(s.total) : '—'}</td>
-                    <td class="actions">
+                    <td data-label="Name"><strong>${c.name}</strong></td>
+<td data-label="Phone">${c.phone || '—'}</td>
+<td data-label="Email">${c.email || '—'}</td>
+<td data-label="Projects" class="num">${s.count}</td>
+<td data-label="Total Value" class="num">${s.total ? fmtMoney(s.total) : '—'}</td>
+<td data-label="Actions" class="actions">...</td>
                       <button class="btn-secondary btn-sm" data-edit="${c.id}">Edit</button>
                       <button class="btn-danger btn-sm" data-del="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}">Delete</button>
                     </td>
