@@ -874,55 +874,48 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 PROMINENT LIQUID GLASS PILL (Fixed Positioning)
+   💧 PERFECT LIQUID GLASS PILL (Attached to Icon)
    ============================================================ */
 
-/* 1. Remove the white box background so the glass pill shines */
+/* 1. Keep the active tab background subtle so the pill shines */
 .sidebar-pill a.active {
-  background: transparent !important;
-  box-shadow: none !important;
-  color: #15803d !important; /* Green text */
+  background: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6) !important;
 }
 
-/* 2. Force the link to hold the pill exactly in place */
-.sidebar-pill nav a.active {
-  position: relative !important;
-}
-
-/* 3. The Prominent Liquid Glass Pill */
+/* 2. The Prominent Liquid Glass Pill */
 .sidebar-pill nav a.active::before {
   content: "" !important;
   position: absolute !important;
   
-  /* Positions it exactly on the left edge of the sidebar */
-  left: -10px !important; 
+  /* Placed perfectly inside the link, right next to the icon */
+  left: 4px !important; 
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Bigger and bolder shape */
-  width: 14px !important; 
-  height: 36px !important;
+  /* Bold capsule shape */
+  width: 8px !important; 
+  height: 32px !important;
   border-radius: 50px !important;
   
-  /* Vibrant glass gradient (White to Forest Green) */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(74, 222, 128, 0.9) 40%, rgba(21, 128, 61, 1) 100%) !important;
+  /* Vibrant liquid gradient: White rim -> Green glass -> Dark green depth */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(74, 222, 128, 0.9) 40%, rgba(21, 128, 61, 1) 100%) !important;
   
-  /* Thick glass rim */
-  border: 2px solid rgba(255, 255, 255, 0.9) !important;
+  /* The thick glass rim */
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
   
-  /* Deep 3D reflections (The Apple Vision Pro look) */
+  /* The 3D Glossy Highlights */
   box-shadow: 
-    0 0 20px rgba(34, 197, 94, 0.8),               /* Strong outer green glow */
-    inset 4px 4px 8px rgba(255, 255, 255, 1),      /* Bright top reflection */
-    inset -4px -4px 8px rgba(0, 0, 0, 0.4) !important; /* Dark bottom shadow */
+    0 0 15px rgba(34, 197, 94, 0.7),              /* Strong outer green glow */
+    inset 2px 4px 6px rgba(255, 255, 255, 1),     /* Intense top-left white shine */
+    inset -2px -4px 6px rgba(0, 0, 0, 0.3) !important; /* Dark bottom-right shadow */
     
   z-index: 100 !important;
   pointer-events: none !important;
   transition: all 0.3s ease !important;
 }
 
-/* Optional: Make it stretch slightly when sidebar expands on hover */
+/* Optional: Stretch it slightly when sidebar expands on hover */
 .sidebar-pill:hover nav a.active::before {
-  height: 42px !important;
-  width: 16px !important;
+  height: 38px !important;
 }
