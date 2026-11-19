@@ -98,7 +98,8 @@ function route() {
   // Hide all screens, show target
   document.querySelectorAll('.screen-content').forEach(el => el.style.display = 'none');
 
-  const targetEl = document.getElementById('screen-' + name);
+  const targetId = (name === 'live-projects') ? 'screen-projects' : 'screen-' + name;
+const targetEl = document.getElementById(targetId);
   if (!targetEl) {
     // Unknown route — bounce to default
     location.hash = CURRENT_PROFILE?.role === 'owner' ? '#dashboard' : '#projects';
