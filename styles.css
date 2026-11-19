@@ -874,7 +874,7 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   DARK GLOSSY GLASS ACTIVE TAB (No green pill)
+   DARK GLOSSY GLASS ACTIVE TAB (Truly Transparent)
    ============================================================ */
 
 /* 1. Completely destroy the green floating capsule */
@@ -883,29 +883,32 @@ tbody tr:hover {
   content: none !important;
 }
 
-/* 2. Dark glossy glass background for the active tab */
+/* 2. Dark, transparent glass background */
 .sidebar-pill a.active {
-  /* Deep charcoal/black gradient for the glass */
-  background: linear-gradient(135deg, rgba(45, 45, 50, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%) !important;
+  /* Very low opacity (0.3 to 0.4) so the light background shows through */
+  background: linear-gradient(135deg, rgba(50, 50, 55, 0.3) 0%, rgba(15, 15, 20, 0.5) 100%) !important;
   
-  /* White text/icon to stand out against the dark background */
+  /* Heavy blur to frost whatever is behind it */
+  backdrop-filter: blur(16px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+  
+  /* A brighter, sharper rim to define the glass edge */
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  
+  /* Text/icon is white to contrast the dark glass */
   color: #ffffff !important; 
   
-  /* Subtle bright rim to make it look like glass */
-  border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  
-  /* The 3D Glossy Highlights */
+  /* 3D Glass Reflections */
   box-shadow: 
-    inset 0 2px 4px rgba(255, 255, 255, 0.25),  /* Bright white reflection at the top */
-    inset 0 -2px 4px rgba(0, 0, 0, 0.7),        /* Dark shadow at the bottom */
-    0 6px 16px rgba(0, 0, 0, 0.15) !important;  /* Soft drop shadow so it floats */
+    inset 0 2px 3px rgba(255, 255, 255, 0.6),   /* Sharp white highlight on the top edge */
+    inset 0 -1px 2px rgba(0, 0, 0, 0.4),        /* Dark shadow on the bottom edge */
+    0 6px 16px rgba(0, 0, 0, 0.15) !important;  /* Soft drop shadow underneath */
     
-  /* Extra blur to enhance the glass look */
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
+  transform: none !important;
 }
 
 /* Ensure the text label stays white when the sidebar expands */
 .sidebar-pill a.active span {
   color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Helps white text read clearly on glass */
 }
