@@ -874,43 +874,45 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 ACTIVE TAB "WATER PILL" INDICATOR
+   💧 ACTIVE TAB "WATER PILL" INDICATOR (Fixed)
    ============================================================ */
 
-/* Ensure the link is positioned so the pill stays inside it */
+/* Ensure the link is a positioning context */
 .sidebar-pill a {
   position: relative; 
+  /* Remove the solid blue background if you want the glass pill to stand out */
+  /* If you want to keep the blue background, just leave it */
 }
 
 /* The Water Drop Glass Pill */
 .sidebar-pill a.active::before {
   content: '';
   position: absolute;
-  left: -10px; /* Pushes it to the very edge of the sidebar */
+  
+  /* Place it safely inside the left edge of the active link */
+  left: 4px; 
   top: 50%;
   transform: translateY(-50%);
   
-  /* Shape & Size */
-  width: 6px;
-  height: 28px;
-  border-radius: 20px;
+  /* Shape & Size (A sleek vertical pill) */
+  width: 5px;
+  height: 22px;
+  border-radius: 10px;
   
-  /* Water/Glass Effect */
-  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  /* Glowing Water/Glass Effect */
+  background: linear-gradient(180deg, #93c5fd 0%, #3b82f6 100%);
   
-  /* Glow + Inner Reflection */
+  /* The 3D Glass Reflections */
   box-shadow: 
-    0 0 12px rgba(37, 99, 235, 0.6), /* Outer glowing blur */
-    inset 0 2px 4px rgba(255, 255, 255, 0.8), /* Top glass reflection */
-    inset 0 -2px 4px rgba(0, 0, 0, 0.2); /* Bottom shadow for 3D depth */
+    0 0 10px rgba(59, 130, 246, 0.8), /* Outer glowing blur */
+    inset 0 2px 3px rgba(255, 255, 255, 0.9), /* Top bright reflection */
+    inset 0 -2px 3px rgba(0, 0, 0, 0.2); /* Bottom shadow */
     
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 10;
+  z-index: 99;
+  transition: all 0.3s ease;
 }
 
-/* Optional: Make the pill stretch slightly when the sidebar expands on hover */
+/* Optional: Make the pill stretch when sidebar expands on hover */
 .sidebar-pill:hover a.active::before {
-  height: 32px;
-  left: -5px;
-  width: 8px;
+  height: 26px;
 }
