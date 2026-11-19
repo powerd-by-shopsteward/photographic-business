@@ -2111,16 +2111,7 @@ async function renderTemplates(el) {
         <h2>Agreement Templates</h2>
         <button id="tpl-new">+ New Template</button>
       </div>
-      <p class="hint">
-        Placeholders: <code>{{client_name}}</code> <code>{{client_phone}}</code>
-        <code>{{client_address}}</code> <code>{{project_name}}</code>
-        <code>{{project_date}}</code> <code>{{venue}}</code>
-        <code>{{total_amount}}</code> <code>{{advance_amount}}</code>
-        <code>{{balance_amount}}</code> <code>{{deliverables}}</code>
-        <code>{{studio_name}}</code> <code>{{studio_phone}}</code>
-        <code>{{studio_address}}</code> <code>{{agreement_no}}</code>
-        <code>{{agreement_date}}</code>
-      </p>
+      
       ${list.length ? `
         <div class="table-wrap">
           <table>
