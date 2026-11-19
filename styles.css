@@ -762,145 +762,114 @@ tbody tr:hover {
    ============================================================ */
 @media (max-width: 768px) {
   
-  /* 1. Make the App feel like a native app */
-  body { 
-    font-size: 13px; 
-    padding-bottom: 80px; /* Space for the bottom nav bar */
-  }
+  body { padding-bottom: 100px; }
 
-  /* 2. Fix the Floating Header to be a normal sticky bar */
+  /* 1. FIX THE TOP HEADER (Stop overlapping) */
   .top-header {
     position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    border-radius: 0 !important;
-    height: 60px !important;
-    padding: 0 16px !important;
-    border: none !important;
+    top: 0 !important; left: 0 !important; right: 0 !important;
+    border-radius: 0 !important; height: 60px !important;
+    padding: 0 16px !important; border: none !important;
     border-bottom: 1px solid rgba(255,255,255,0.8) !important;
   }
+  .header-title { 
+    position: static !important; 
+    transform: none !important; 
+    flex: 1 !important; 
+    text-align: left !important;
+    padding-left: 10px !important;
+  }
+  .header-title h1 { 
+    font-size: 14px !important; 
+    white-space: nowrap !important; 
+    overflow: hidden !important; 
+    text-overflow: ellipsis !important; 
+  }
+  .header-right { flex: none !important; gap: 8px !important; }
+  .user-name { display: none !important; }
+  .logout-btn { padding: 6px 12px !important; font-size: 11px !important; }
   
-  .header-title h1 { font-size: 16px !important; }
-  .content { 
-    margin-left: 0 !important; 
-    margin-top: 70px !important; 
-    padding: 12px !important; 
-  }
+  .content { margin-left: 0 !important; margin-top: 70px !important; padding: 12px !important; }
 
-  /* 3. KPI Dashboard Cards - 2 columns instead of 1 */
-  .stat-grid {
-    grid-template-columns: 1fr 1fr !important;
-    gap: 10px !important;
-  }
-  .kpi-card {
-    padding: 16px !important;
-  }
+  /* 2. FIX KPI CARDS (Stop text wrapping) */
+  .stat-grid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .kpi-card { padding: 16px !important; }
+  .kpi-card .label { font-size: 10px !important; }
   .kpi-card .value { font-size: 22px !important; }
-  .kpi-card .bg-icon { width: 70px !important; height: 70px !important; }
+  .kpi-card .bg-icon { width: 60px !important; height: 60px !important; }
 
-  /* 4. Forms & Grids stack vertically */
-  .form-row, .form-row-3, .dashboard-grid, .dashboard-bottom-grid { 
-    grid-template-columns: 1fr !important; 
-    gap: 12px !important;
+  /* 3. FIX CHART OVERFLOW */
+  .chart-container { height: 300px !important; width: 100% !important; overflow: hidden !important; }
+  .dashboard-grid { grid-template-columns: 1fr !important; }
+  .card { padding: 16px !important; }
+
+  /* 4. FIX CARD HEADERS (Stop squishing) */
+  .card-header { flex-wrap: wrap !important; gap: 10px !important; }
+  .card-header h2 { white-space: normal !important; font-size: 16px !important; }
+  
+  /* 5. FIX MODALS (Stop bottom nav overlap) */
+  .modal-backdrop { z-index: 9999 !important; }
+  .modal { 
+    max-width: 100% !important; 
+    width: 100% !important;
+    height: auto !important;
+    max-height: 90vh !important; 
+    border-radius: 16px !important; 
+    margin: 10px !important;
   }
 
-  /* 5. Modals take up full screen on mobile */
-  .modal {
-    max-width: 100% !important;
-    height: 100% !important;
-    max-height: 100vh !important;
-    border-radius: 0 !important;
-    padding: 20px !important;
-  }
-
-  /* ============================================================
-     🪄 THE MAGIC TABLE TRICK (Turns rows into cards)
-     ============================================================ */
+  /* 6. MAGIC TABLE TRICK */
   table, thead, tbody, th, td, tr { display: block; width: 100%; }
-  
-  thead { display: none; } /* Hide the column headers */
-  
+  thead { display: none; }
   tbody tr {
     background: rgba(255, 255, 255, 0.6);
-    border-radius: 12px;
-    margin-bottom: 12px;
-    padding: 12px;
+    border-radius: 12px; margin-bottom: 12px; padding: 12px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     border: 1px solid rgba(255, 255, 255, 0.8);
   }
-
   td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px dashed #e5e7eb;
-    padding: 8px 0 !important;
-    text-align: right;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px dashed #e5e7eb; padding: 8px 0 !important; text-align: right;
   }
   td:last-child { border-bottom: none; padding-bottom: 0 !important; }
-
-  /* Add the column name to the left side of the data */
   td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #64748b;
-    font-size: 12px;
-    text-transform: uppercase;
-    text-align: left;
+    content: attr(data-label); font-weight: 600; color: #64748b;
+    font-size: 11px; text-transform: uppercase; text-align: left; margin-right: 10px;
   }
 
-  /* ============================================================
-     🧭 MOBILE BOTTOM NAVIGATION (You must add HTML for this)
-     ============================================================ */
+  /* Fix Client/Project action buttons floating */
+  td.actions { display: flex !important; justify-content: flex-end !important; gap: 8px !important; flex-wrap: wrap !important; }
+  td.actions::before { margin-right: auto; }
+
+  /* 7. FLOATING GLASS PILL BOTTOM NAV */
   .mobile-bottom-nav {
     display: flex !important;
     position: fixed;
-    bottom: 0; left: 0; right: 0;
+    bottom: 20px; /* Floats above the bottom edge */
+    left: 20px; right: 20px; /* Side margins */
     height: 65px;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    /* Glass effect matching sidebar */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.3) 100%);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.4), 0 8px 32px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     justify-content: space-around;
     align-items: center;
     padding: 0 10px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
   }
 
   .mobile-bottom-nav a {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    color: #64748b;
-    font-size: 10px;
-    font-weight: 600;
-    text-decoration: none;
-    padding: 8px 12px;
-    border-radius: 12px;
-    transition: all 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: #64748b; font-size: 10px; font-weight: 600; text-decoration: none;
+    padding: 8px 12px; border-radius: 16px; transition: all 0.2s;
   }
-
-  .mobile-bottom-nav a.active {
-    color: #2563eb;
-    background: rgba(37, 99, 235, 0.1);
-  }
-
-  .mobile-bottom-nav img {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-    opacity: 0.7;
-  }
-  
-  .mobile-bottom-nav a.active img {
-    opacity: 1;
-  }
+  .mobile-bottom-nav a.active { color: #2563eb; background: rgba(255, 255, 255, 0.8); }
+  .mobile-bottom-nav img { width: 22px; height: 22px; object-fit: contain; }
 }
 
-/* Hide the bottom nav on desktop */
 @media (min-width: 769px) {
   .mobile-bottom-nav { display: none !important; }
 }
