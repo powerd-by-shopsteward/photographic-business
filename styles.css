@@ -874,48 +874,44 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 ULTIMATE GLOWING WATER PILL INDICATOR
+   💧 FOREST GREEN WATER PILL INDICATOR (Bulletproof)
    ============================================================ */
 
-/* 1. Make the link a relative container */
+/* 1. Ensure the link has relative positioning */
 .sidebar-pill a {
   position: relative !important;
-  transition: all 0.3s ease !important;
 }
 
-/* 2. Style the active link background (Soft Glassy Glow) */
+/* 2. Soft green background for the active tab */
 .sidebar-pill a.active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.15) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 12px rgba(37, 99, 235, 0.1) !important;
-  color: #2563eb !important;
+  background: rgba(34, 197, 94, 0.15) !important; /* Light green tint */
+  color: #15803d !important; /* Forest green text */
 }
 
-/* 3. The Water Drop Glass Pill */
+/* 3. The Forest Green Water Drop */
 .sidebar-pill a.active::before {
-  content: '' !important;
+  content: "" !important;
   position: absolute !important;
   
-  /* Placed exactly on the left edge, inside the button */
-  left: 0px !important; 
+  /* Placed safely inside the left edge */
+  left: 3px !important; 
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Pill Shape */
-  width: 5px !important;
-  height: 24px !important;
-  border-radius: 0 8px 8px 0 !important;
+  /* Thick, visible pill shape */
+  width: 7px !important; 
+  height: 28px !important;
+  border-radius: 10px !important;
   
-  /* Water/Glass Effect */
-  background: linear-gradient(180deg, #93c5fd 0%, #2563eb 100%) !important;
+  /* The Water/Glass Effect */
+  background: linear-gradient(180deg, #4ade80 0%, #15803d 100%) !important;
+  
+  /* 3D Reflections + Outer Green Glow */
   box-shadow: 
-    0 0 12px rgba(37, 99, 235, 0.9), 
-    inset 0 2px 3px rgba(255, 255, 255, 0.9),
+    0 0 12px rgba(21, 128, 61, 0.7), 
+    inset 0 2px 3px rgba(255, 255, 255, 0.9), 
     inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
     
-  z-index: 999 !important;
+  z-index: 9999 !important;
   pointer-events: none !important;
-}
-/* Fallback just in case */
-.sidebar-pill a.active {
-  border-left: 5px solid #2563eb !important;
 }
