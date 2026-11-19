@@ -874,7 +874,7 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   CLEAN ACTIVE TAB (No green pill)
+   DARK GLOSSY GLASS ACTIVE TAB (No green pill)
    ============================================================ */
 
 /* 1. Completely destroy the green floating capsule */
@@ -883,11 +883,29 @@ tbody tr:hover {
   content: none !important;
 }
 
-/* 2. Keep the beautiful white glass background for the active tab */
+/* 2. Dark glossy glass background for the active tab */
 .sidebar-pill a.active {
-  background: rgba(255, 255, 255, 0.8) !important;
-  color: #2563eb !important; /* Blue text/icon */
+  /* Deep charcoal/black gradient for the glass */
+  background: linear-gradient(135deg, rgba(45, 45, 50, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%) !important;
+  
+  /* White text/icon to stand out against the dark background */
+  color: #ffffff !important; 
+  
+  /* Subtle bright rim to make it look like glass */
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  
+  /* The 3D Glossy Highlights */
   box-shadow: 
-    0 2px 10px rgba(0,0,0,0.05), 
-    inset 0 0 0 1px rgba(255, 255, 255, 0.8) !important; /* Inner glass reflection */
+    inset 0 2px 4px rgba(255, 255, 255, 0.25),  /* Bright white reflection at the top */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.7),        /* Dark shadow at the bottom */
+    0 6px 16px rgba(0, 0, 0, 0.15) !important;  /* Soft drop shadow so it floats */
+    
+  /* Extra blur to enhance the glass look */
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+}
+
+/* Ensure the text label stays white when the sidebar expands */
+.sidebar-pill a.active span {
+  color: #ffffff !important;
 }
