@@ -757,3 +757,150 @@ tbody tr:hover {
 .dashboard-bottom-grid .card p.muted {
   margin: auto !important;
 }
+/* ============================================================
+   📱 TRUE MOBILE APP LAYOUT (Max Width: 768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  
+  /* 1. Make the App feel like a native app */
+  body { 
+    font-size: 13px; 
+    padding-bottom: 80px; /* Space for the bottom nav bar */
+  }
+
+  /* 2. Fix the Floating Header to be a normal sticky bar */
+  .top-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-radius: 0 !important;
+    height: 60px !important;
+    padding: 0 16px !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255,255,255,0.8) !important;
+  }
+  
+  .header-title h1 { font-size: 16px !important; }
+  .content { 
+    margin-left: 0 !important; 
+    margin-top: 70px !important; 
+    padding: 12px !important; 
+  }
+
+  /* 3. KPI Dashboard Cards - 2 columns instead of 1 */
+  .stat-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .kpi-card {
+    padding: 16px !important;
+  }
+  .kpi-card .value { font-size: 22px !important; }
+  .kpi-card .bg-icon { width: 70px !important; height: 70px !important; }
+
+  /* 4. Forms & Grids stack vertically */
+  .form-row, .form-row-3, .dashboard-grid, .dashboard-bottom-grid { 
+    grid-template-columns: 1fr !important; 
+    gap: 12px !important;
+  }
+
+  /* 5. Modals take up full screen on mobile */
+  .modal {
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+    padding: 20px !important;
+  }
+
+  /* ============================================================
+     🪄 THE MAGIC TABLE TRICK (Turns rows into cards)
+     ============================================================ */
+  table, thead, tbody, th, td, tr { display: block; width: 100%; }
+  
+  thead { display: none; } /* Hide the column headers */
+  
+  tbody tr {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #e5e7eb;
+    padding: 8px 0 !important;
+    text-align: right;
+  }
+  td:last-child { border-bottom: none; padding-bottom: 0 !important; }
+
+  /* Add the column name to the left side of the data */
+  td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #64748b;
+    font-size: 12px;
+    text-transform: uppercase;
+    text-align: left;
+  }
+
+  /* ============================================================
+     🧭 MOBILE BOTTOM NAVIGATION (You must add HTML for this)
+     ============================================================ */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 10px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+  }
+
+  .mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 8px 12px;
+    border-radius: 12px;
+    transition: all 0.2s;
+  }
+
+  .mobile-bottom-nav a.active {
+    color: #2563eb;
+    background: rgba(37, 99, 235, 0.1);
+  }
+
+  .mobile-bottom-nav img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    opacity: 0.7;
+  }
+  
+  .mobile-bottom-nav a.active img {
+    opacity: 1;
+  }
+}
+
+/* Hide the bottom nav on desktop */
+@media (min-width: 769px) {
+  .mobile-bottom-nav { display: none !important; }
+}
