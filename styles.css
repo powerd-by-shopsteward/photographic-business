@@ -874,7 +874,7 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   DARK GLOSSY GLASS ACTIVE TAB (Truly Transparent)
+   DARK GLOSSY GLASS ACTIVE TAB (High-End Glass)
    ============================================================ */
 
 /* 1. Completely destroy the green floating capsule */
@@ -883,32 +883,32 @@ tbody tr:hover {
   content: none !important;
 }
 
-/* 2. Dark, transparent glass background */
+/* 2. The Premium Glass Pill */
 .sidebar-pill a.active {
-  /* Very low opacity (0.3 to 0.4) so the light background shows through */
-  background: linear-gradient(135deg, rgba(50, 50, 55, 0.3) 0%, rgba(15, 15, 20, 0.5) 100%) !important;
+  /* The Glare (Radial gradient simulating a light source) + The Dark Tint */
+  background: 
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 60%),
+    linear-gradient(135deg, rgba(30, 30, 35, 0.4) 0%, rgba(10, 10, 15, 0.6) 100%) !important;
   
-  /* Heavy blur to frost whatever is behind it */
-  backdrop-filter: blur(16px) saturate(150%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+  /* Strong frosted blur to warp the background */
+  backdrop-filter: blur(20px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(200%) !important;
   
-  /* A brighter, sharper rim to define the glass edge */
-  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  /* A crisp, bright white glass rim */
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   
-  /* Text/icon is white to contrast the dark glass */
-  color: #ffffff !important; 
-  
-  /* 3D Glass Reflections */
+  /* 3D Glass Edge Reflections */
   box-shadow: 
-    inset 0 2px 3px rgba(255, 255, 255, 0.6),   /* Sharp white highlight on the top edge */
-    inset 0 -1px 2px rgba(0, 0, 0, 0.4),        /* Dark shadow on the bottom edge */
-    0 6px 16px rgba(0, 0, 0, 0.15) !important;  /* Soft drop shadow underneath */
+    inset 0 1px 2px rgba(255, 255, 255, 1),       /* Very sharp top white edge */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.7),          /* Deep dark shadow at bottom */
+    0 8px 20px rgba(0, 0, 0, 0.2) !important;     /* Floating drop shadow */
     
+  color: #ffffff !important; 
   transform: none !important;
 }
 
 /* Ensure the text label stays white when the sidebar expands */
 .sidebar-pill a.active span {
   color: #ffffff !important;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.5); /* Helps white text read clearly on glass */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); /* Helps text read clearly over the glass */
 }
