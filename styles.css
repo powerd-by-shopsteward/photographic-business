@@ -874,49 +874,56 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 REAL GLOSSY WATER CAPSULE
+   💧 LIQUID GLASS INDICATOR (Apple Vision Pro Style)
    ============================================================ */
 
-/* 1. Soft green glass background for the active tab */
+/* 1. Soft, transparent glass background for the active tab */
 .sidebar-pill a.active {
-  background: linear-gradient(90deg, rgba(21, 128, 61, 0.15) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
-  color: #15803d !important; 
-  box-shadow: inset 0 0 0 1px rgba(21, 128, 61, 0.1) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  color: #15803d !important;
+  box-shadow: 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6), 
+    0 4px 10px rgba(0,0,0,0.05) !important;
 }
 
-/* 2. The Glossy Water Capsule */
+/* 2. The Floating Liquid Glass Pill */
 .sidebar-pill a.active::before {
   content: "" !important;
   position: absolute !important;
   
-  /* Move it safely INSIDE the link so overflow:hidden doesn't cut it */
-  left: 6px !important; 
+  /* Positioned safely inside */
+  left: 8px !important; 
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Shape: Small, thick, and fully rounded */
-  width: 8px !important; 
-  height: 26px !important;
-  border-radius: 50px !important; /* Makes it a perfect capsule */
+  /* Shape */
+  width: 12px !important; 
+  height: 32px !important;
+  border-radius: 50px !important;
   
-  /* The Water Gradient (Light top, dark bottom) */
-  background: linear-gradient(180deg, #4ade80 0%, #166534 100%) !important;
+  /* 1. Glass Core (Transparent to Forest Green gradient) */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(21, 128, 61, 0.5) 100%) !important;
   
-  /* The Glossy 3D Reflection */
+  /* 2. The Blur/Refraction */
+  backdrop-filter: blur(10px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(200%) !important;
+  
+  /* 3. The Sharp Glass Rim */
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  
+  /* 4. The 3D Glossy Highlights (This is the magic) */
   box-shadow: 
-    0 0 12px rgba(22, 101, 52, 0.6),               /* Outer soft glow */
-    inset 0 4px 4px rgba(255, 255, 255, 0.9),      /* Bright top reflection (the water shine) */
-    inset 0 -4px 4px rgba(0, 0, 0, 0.3),           /* Dark bottom shadow */
-    inset 2px 0 2px rgba(255, 255, 255, 0.5)       /* Side shine */
-    !important;
+    inset 2px 4px 6px rgba(255, 255, 255, 1),    /* Intense white shine at the top */
+    inset -2px -4px 6px rgba(21, 128, 61, 0.6),  /* Green glow at the bottom */
+    0 4px 12px rgba(21, 128, 61, 0.4) !important; /* Outer glowing shadow */
     
-  z-index: 99 !important;
+  z-index: 100 !important;
   pointer-events: none !important;
   transition: all 0.3s ease !important;
 }
 
-/* Optional: Make it stretch slightly when sidebar expands on hover */
+/* Optional: Stretch it slightly when hovering the sidebar */
 .sidebar-pill:hover a.active::before {
-  height: 30px !important;
-  width: 9px !important;
+  height: 36px !important;
+  width: 14px !important;
 }
