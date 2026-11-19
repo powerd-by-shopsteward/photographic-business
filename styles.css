@@ -873,3 +873,44 @@ tbody tr:hover {
 @media (min-width: 769px) {
   .mobile-bottom-nav { display: none !important; }
 }
+/* ============================================================
+   💧 ACTIVE TAB "WATER PILL" INDICATOR
+   ============================================================ */
+
+/* Ensure the link is positioned so the pill stays inside it */
+.sidebar-pill a {
+  position: relative; 
+}
+
+/* The Water Drop Glass Pill */
+.sidebar-pill a.active::before {
+  content: '';
+  position: absolute;
+  left: -10px; /* Pushes it to the very edge of the sidebar */
+  top: 50%;
+  transform: translateY(-50%);
+  
+  /* Shape & Size */
+  width: 6px;
+  height: 28px;
+  border-radius: 20px;
+  
+  /* Water/Glass Effect */
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+  
+  /* Glow + Inner Reflection */
+  box-shadow: 
+    0 0 12px rgba(37, 99, 235, 0.6), /* Outer glowing blur */
+    inset 0 2px 4px rgba(255, 255, 255, 0.8), /* Top glass reflection */
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2); /* Bottom shadow for 3D depth */
+    
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+/* Optional: Make the pill stretch slightly when the sidebar expands on hover */
+.sidebar-pill:hover a.active::before {
+  height: 32px;
+  left: -5px;
+  width: 8px;
+}
