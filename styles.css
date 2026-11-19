@@ -916,3 +916,7 @@ tbody tr:hover {
 .sidebar-pill:hover a.active::before {
   height: 26px;
 }
+.sidebar-pill a.active {
+  background: rgba(255, 255, 255, 0.4) !important; /* Subtle glass instead of solid blue */
+  color: #2563eb;
+}
