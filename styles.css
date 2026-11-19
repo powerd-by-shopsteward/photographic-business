@@ -874,56 +874,55 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 LIQUID GLASS INDICATOR (Apple Vision Pro Style)
+   💧 PROMINENT LIQUID GLASS PILL (Fixed Positioning)
    ============================================================ */
 
-/* 1. Soft, transparent glass background for the active tab */
+/* 1. Remove the white box background so the glass pill shines */
 .sidebar-pill a.active {
-  background: rgba(255, 255, 255, 0.3) !important;
-  color: #15803d !important;
-  box-shadow: 
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6), 
-    0 4px 10px rgba(0,0,0,0.05) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #15803d !important; /* Green text */
 }
 
-/* 2. The Floating Liquid Glass Pill */
-.sidebar-pill a.active::before {
+/* 2. Force the link to hold the pill exactly in place */
+.sidebar-pill nav a.active {
+  position: relative !important;
+}
+
+/* 3. The Prominent Liquid Glass Pill */
+.sidebar-pill nav a.active::before {
   content: "" !important;
   position: absolute !important;
   
-  /* Positioned safely inside */
-  left: 8px !important; 
+  /* Positions it exactly on the left edge of the sidebar */
+  left: -10px !important; 
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Shape */
-  width: 12px !important; 
-  height: 32px !important;
+  /* Bigger and bolder shape */
+  width: 14px !important; 
+  height: 36px !important;
   border-radius: 50px !important;
   
-  /* 1. Glass Core (Transparent to Forest Green gradient) */
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(21, 128, 61, 0.5) 100%) !important;
+  /* Vibrant glass gradient (White to Forest Green) */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(74, 222, 128, 0.9) 40%, rgba(21, 128, 61, 1) 100%) !important;
   
-  /* 2. The Blur/Refraction */
-  backdrop-filter: blur(10px) saturate(200%) !important;
-  -webkit-backdrop-filter: blur(10px) saturate(200%) !important;
+  /* Thick glass rim */
+  border: 2px solid rgba(255, 255, 255, 0.9) !important;
   
-  /* 3. The Sharp Glass Rim */
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
-  
-  /* 4. The 3D Glossy Highlights (This is the magic) */
+  /* Deep 3D reflections (The Apple Vision Pro look) */
   box-shadow: 
-    inset 2px 4px 6px rgba(255, 255, 255, 1),    /* Intense white shine at the top */
-    inset -2px -4px 6px rgba(21, 128, 61, 0.6),  /* Green glow at the bottom */
-    0 4px 12px rgba(21, 128, 61, 0.4) !important; /* Outer glowing shadow */
+    0 0 20px rgba(34, 197, 94, 0.8),               /* Strong outer green glow */
+    inset 4px 4px 8px rgba(255, 255, 255, 1),      /* Bright top reflection */
+    inset -4px -4px 8px rgba(0, 0, 0, 0.4) !important; /* Dark bottom shadow */
     
   z-index: 100 !important;
   pointer-events: none !important;
   transition: all 0.3s ease !important;
 }
 
-/* Optional: Stretch it slightly when hovering the sidebar */
-.sidebar-pill:hover a.active::before {
-  height: 36px !important;
-  width: 14px !important;
+/* Optional: Make it stretch slightly when sidebar expands on hover */
+.sidebar-pill:hover nav a.active::before {
+  height: 42px !important;
+  width: 16px !important;
 }
