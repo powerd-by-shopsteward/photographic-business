@@ -109,7 +109,7 @@ const targetEl = document.getElementById(targetId);
 
   // Sidebar active state (map nested → parent)
   const sidebarName = SIDEBAR_MAP[name] || name;
-  document.querySelectorAll('.sidebar a').forEach(a =>
+  document.querySelectorAll('.sidebar-pill a').forEach(a =>
     a.classList.toggle('active', a.dataset.screen === sidebarName));
 
   // Render
