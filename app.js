@@ -741,7 +741,28 @@ async function openProjectForm(projectId = null) {
 
     renderMembers();
     renderGadgets();
-    
+
+     // Wire up the "+ Add member" button
+    document.getElementById('pf-add-member').onclick = () => {
+      openMemberForm(null, null, (newMember) => {
+        // Add the new member to our local state list
+        S.members.push(newMember);
+        // Automatically check them in the UI
+        S.selMembers[newMember.id] = { amount: newMember.default_rate || '' };
+        // Re-render the lists
+        renderMembers();
+        renderMemberGear();
+      });
+    };
+
+    // Wire up the "+" Add Client button (Bonus fix!)
+    const addClientBtn = document.getElementById('pf-add-client');
+    if (addClientBtn) {
+      addClientBtn.onclick = () => {
+        openClientForm(); // This opens the client modal
+      };
+    }
+    // 👆 END OF NEW CODE 👆
     // (Nested popups for Add Client and Add Member would go here, but omitted for brevity as they are not needed in Edit mode)
     // ...
   }
@@ -1027,7 +1048,7 @@ SCREENS.members = async function(el) {
 };
 
 // --- 3.3 Member form modal (add new + edit existing) ---
-async function openMemberForm(existing, profile) {
+async function openMemberForm(existing, profile, onSuccess = null) {
   const { data: rData } = await db.from('roles')
     .select('name').eq('active', true).order('sort_order');
   const roles  = (rData || []).map(r => r.name);
@@ -1152,18 +1173,35 @@ async function openMemberForm(existing, profile) {
       };
       if (!payload.name || !payload.phone) throw new Error('Name and phone are required');
 
+          try {
+      let createdMember = null;
       if (isEdit) {
         const { error } = await db.from('team_members').update(payload).eq('id', existing.id);
         if (error) throw error;
       } else {
         const giveLogin = document.getElementById('mf-give-login')?.checked;
-        await addMember({
+        createdMember = await addMember({
           ...payload,
           giveLogin,
           loginEmail:    giveLogin ? document.getElementById('mf-email').value.trim() : null,
           loginPassword: giveLogin ? document.getElementById('mf-password').value       : null,
         });
       }
+
+      backdrop.remove();
+      
+      // If we opened this from the Project Form, pass the new member back!
+      if (!isEdit && createdMember && onSuccess) {
+        onSuccess(createdMember);
+      } else {
+        // Otherwise, just refresh the main members screen
+        SCREENS.members(document.getElementById('screen-members'));
+      }
+    } catch (err) {
+      errBox.textContent  = err.message;
+      saveBtn.disabled    = false;
+      saveBtn.textContent = isEdit ? 'Save Changes' : 'Add Member';
+    }
 
       backdrop.remove();
       SCREENS.members(document.getElementById('screen-members'));
