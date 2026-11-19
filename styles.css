@@ -874,46 +874,49 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 ULTIMATE FOREST GREEN WATER DROP
+   💧 REAL GLOSSY WATER CAPSULE
    ============================================================ */
 
-/* Ensure the link has relative positioning */
-.sidebar-pill a {
-  position: relative !important;
-  transition: all 0.3s ease !important;
-}
-
-/* Soft green glass tint for the active tab */
+/* 1. Soft green glass background for the active tab */
 .sidebar-pill a.active {
   background: linear-gradient(90deg, rgba(21, 128, 61, 0.15) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
   color: #15803d !important; 
   box-shadow: inset 0 0 0 1px rgba(21, 128, 61, 0.1) !important;
 }
 
-/* The Glowing Water Drop */
+/* 2. The Glossy Water Capsule */
 .sidebar-pill a.active::before {
   content: "" !important;
   position: absolute !important;
   
-  /* Placed safely on the left edge of the link */
-  left: -10px !important; /* Pulls it to the edge of the sidebar padding */
+  /* Move it safely INSIDE the link so overflow:hidden doesn't cut it */
+  left: 6px !important; 
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Thick pill shape */
+  /* Shape: Small, thick, and fully rounded */
   width: 8px !important; 
-  height: 28px !important;
-  border-radius: 0 10px 10px 0 !important; /* Flat left, rounded right */
+  height: 26px !important;
+  border-radius: 50px !important; /* Makes it a perfect capsule */
   
-  /* Forest Green Water Gradient */
-  background: linear-gradient(180deg, #4ade80 0%, #15803d 100%) !important;
+  /* The Water Gradient (Light top, dark bottom) */
+  background: linear-gradient(180deg, #4ade80 0%, #166534 100%) !important;
   
-  /* 3D Glass Reflections & Glow */
+  /* The Glossy 3D Reflection */
   box-shadow: 
-    0 0 15px rgba(21, 128, 61, 0.6), /* Outer green glow */
-    inset 2px 0 3px rgba(255, 255, 255, 0.8), /* Inner bright reflection */
-    inset -2px 0 3px rgba(0, 0, 0, 0.3) !important; /* Inner dark shadow */
+    0 0 12px rgba(22, 101, 52, 0.6),               /* Outer soft glow */
+    inset 0 4px 4px rgba(255, 255, 255, 0.9),      /* Bright top reflection (the water shine) */
+    inset 0 -4px 4px rgba(0, 0, 0, 0.3),           /* Dark bottom shadow */
+    inset 2px 0 2px rgba(255, 255, 255, 0.5)       /* Side shine */
+    !important;
     
   z-index: 99 !important;
   pointer-events: none !important;
+  transition: all 0.3s ease !important;
+}
+
+/* Optional: Make it stretch slightly when sidebar expands on hover */
+.sidebar-pill:hover a.active::before {
+  height: 30px !important;
+  width: 9px !important;
 }
