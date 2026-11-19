@@ -915,3 +915,7 @@ tbody tr:hover {
   z-index: 999 !important;
   pointer-events: none !important;
 }
+/* Fallback just in case */
+.sidebar-pill a.active {
+  border-left: 5px solid #2563eb !important;
+}
