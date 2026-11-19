@@ -874,44 +874,46 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   💧 FOREST GREEN WATER PILL INDICATOR (Bulletproof)
+   💧 ULTIMATE FOREST GREEN WATER DROP
    ============================================================ */
 
-/* 1. Ensure the link has relative positioning */
+/* Ensure the link has relative positioning */
 .sidebar-pill a {
   position: relative !important;
+  transition: all 0.3s ease !important;
 }
 
-/* 2. Soft green background for the active tab */
+/* Soft green glass tint for the active tab */
 .sidebar-pill a.active {
-  background: rgba(34, 197, 94, 0.15) !important; /* Light green tint */
-  color: #15803d !important; /* Forest green text */
+  background: linear-gradient(90deg, rgba(21, 128, 61, 0.15) 0%, rgba(255, 255, 255, 0.6) 100%) !important;
+  color: #15803d !important; 
+  box-shadow: inset 0 0 0 1px rgba(21, 128, 61, 0.1) !important;
 }
 
-/* 3. The Forest Green Water Drop */
+/* The Glowing Water Drop */
 .sidebar-pill a.active::before {
   content: "" !important;
   position: absolute !important;
   
-  /* Placed safely inside the left edge */
-  left: 3px !important; 
+  /* Placed safely on the left edge of the link */
+  left: -10px !important; /* Pulls it to the edge of the sidebar padding */
   top: 50% !important;
   transform: translateY(-50%) !important;
   
-  /* Thick, visible pill shape */
-  width: 7px !important; 
+  /* Thick pill shape */
+  width: 8px !important; 
   height: 28px !important;
-  border-radius: 10px !important;
+  border-radius: 0 10px 10px 0 !important; /* Flat left, rounded right */
   
-  /* The Water/Glass Effect */
+  /* Forest Green Water Gradient */
   background: linear-gradient(180deg, #4ade80 0%, #15803d 100%) !important;
   
-  /* 3D Reflections + Outer Green Glow */
+  /* 3D Glass Reflections & Glow */
   box-shadow: 
-    0 0 12px rgba(21, 128, 61, 0.7), 
-    inset 0 2px 3px rgba(255, 255, 255, 0.9), 
-    inset 0 -2px 3px rgba(0, 0, 0, 0.2) !important;
+    0 0 15px rgba(21, 128, 61, 0.6), /* Outer green glow */
+    inset 2px 0 3px rgba(255, 255, 255, 0.8), /* Inner bright reflection */
+    inset -2px 0 3px rgba(0, 0, 0, 0.3) !important; /* Inner dark shadow */
     
-  z-index: 9999 !important;
+  z-index: 99 !important;
   pointer-events: none !important;
 }
