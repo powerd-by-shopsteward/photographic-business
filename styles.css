@@ -1014,91 +1014,38 @@ tbody tr:hover {
   70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
-/* OPTION 1: SPLIT SCREEN GLASS LOGIN (FIXED) */
+/* OPTION 1: SPLIT SCREEN LOGIN */
 .login-page-split {
-  /* REMOVED !important from display so JS can hide it */
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  place-items: center;
-  gap: 40px;
+  display: flex;
   min-height: 100vh;
-  padding: 40px;
-  
-  /* THIS COVERS THE DASHBOARD */
-  position: fixed !important;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%; height: 100%;
-  z-index: 99999; 
-  
-  /* Deep cinematic background */
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
-}
-
-/* Shared Glass Styles for both halves */
-.login-left, .login-right {
   width: 100%;
-  max-width: 450px;
-  min-height: 500px;
-  border-radius: 24px;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+.login-left {
+  flex: 1;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #fff;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 50px;
+  padding: 60px;
 }
-
-/* Left Side - Darker Glass */
-.login-left {
-  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-}
-
-/* Right Side - Lighter Glass */
+.brand-title { font-family: 'Cinzel', serif; font-size: 42px; margin-bottom: 10px; color: #fff; }
+.brand-sub { font-size: 18px; color: #94a3b8; }
 .login-right {
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  padding: 40px;
 }
-
-/* Typography */
-.brand-title { 
-  font-family: 'Cinzel', serif; 
-  font-size: 42px; 
-  margin-bottom: 12px; 
-  color: #ffffff; 
-  line-height: 1.1;
+.login-box-clean {
+  width: 100%;
+  max-width: 400px;
 }
-.brand-sub { 
-  font-size: 16px; 
-  color: #94a3b8; 
-  letter-spacing: 1px;
-}
-
-/* Form Styling inside Glass */
-.login-box-clean { width: 100%; }
-.login-box-clean h2 { font-size: 28px; margin-bottom: 8px; color: #ffffff; }
-.login-box-clean label { color: #cbd5e1; }
-.login-box-clean input {
-  background: rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
-}
-.login-box-clean input:focus {
-  border-color: #3b82f6 !important;
-  background: rgba(0, 0, 0, 0.4) !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
-}
-.login-box-clean button {
-  background: #3b82f6 !important;
-  color: #fff;
-  font-weight: 600;
-  transition: background 0.2s;
-}
-.login-box-clean button:hover { background: #2563eb !important; }
-
-/* Mobile Responsiveness */
-@media (max-width: 900px) {
-  .login-page-split { grid-template-columns: 1fr; padding: 20px; }
-  .login-left { display: none !important; }
-  .login-right { min-height: auto; padding: 40px 30px; }
+.login-box-clean h2 { font-size: 28px; margin-bottom: 8px; color: #0f172a; }
+@media (max-width: 768px) {
+  .login-page-split { flex-direction: column; }
+  .login-left { padding: 40px; flex: none; }
+  .login-right { flex: 1; }
 }
