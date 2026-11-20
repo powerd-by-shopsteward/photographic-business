@@ -4139,8 +4139,12 @@ SCREENS.profile = async function(el) {
           upi_id:          document.getElementById('pf3-upi').value.trim() || null,
         };
 
-        const { error } = await db.from('studio').update(payload)
-          .eq('id', '00000000-0000-0000-0000-000000000001');
+                // Find the actual row ID first
+        const { data: studioData, error: fetchErr } = await db.from('studio').select('id').limit(1).single();
+        if (fetchErr) throw fetchErr;
+        
+        // Update using the real ID
+        const { error } = await db.from('studio').update(payload).eq('id', studioData.id);
         if (error) throw error;
         
         alert('Profile saved.');
@@ -4660,8 +4664,7 @@ async function loadBrandName() {
   const profileLogo = document.getElementById('header-profile-logo');
   const fallbackEmoji = document.getElementById('profile-fallback-emoji');
 
-  // 🚨 STEP 1: Set the hardcoded fallback IMMEDIATELY
-  // This guarantees the name is never "Studio Name" even if the DB is blocked.
+  // 1. Force the fallback name immediately
   if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
 
   try {
@@ -4669,25 +4672,21 @@ async function loadBrandName() {
     
     if (error) throw error;
 
-    // STEP 2: If the database gives us data, override the fallback
-    if (data) {
-      if (data.name && headerEl) {
-        headerEl.textContent = data.name;
-      }
-      
-      if (data.logo_url) {
-        if (profileLogo) { profileLogo.src = data.logo_url; profileLogo.style.display = 'block'; }
-        if (fallbackEmoji) fallbackEmoji.style.display = 'none';
-      } else {
-        if (profileLogo) profileLogo.style.display = 'none';
-        if (fallbackEmoji) fallbackEmoji.style.display = 'block';
-      }
+    // 2. If DB has a REAL name, use it. If it says "Studio Name", ignore it.
+    if (data && data.name && data.name !== 'Studio Name') {
+      if (headerEl) headerEl.textContent = data.name;
+    }
+    
+    // 3. Load logo
+    if (data && data.logo_url) {
+      if (profileLogo) { profileLogo.src = data.logo_url; profileLogo.style.display = 'block'; }
+      if (fallbackEmoji) fallbackEmoji.style.display = 'none';
+    } else {
+      if (profileLogo) profileLogo.style.display = 'none';
+      if (fallbackEmoji) fallbackEmoji.style.display = 'block';
     }
   } catch (err) {
-    // STEP 3: If it fails, we do nothing. The fallback is already set in Step 1!
     console.warn('DB blocked or failed, using hardcoded fallback:', err);
-    
-    // Ensure the emoji shows up if the logo can't be fetched
     if (profileLogo) profileLogo.style.display = 'none';
     if (fallbackEmoji) fallbackEmoji.style.display = 'block';
   }
