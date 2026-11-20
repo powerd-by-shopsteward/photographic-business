@@ -4101,7 +4101,7 @@ SCREENS.profile = async function(el) {
       </div>
     `;
 
-        document.getElementById('pf3-form').onsubmit = async e => {
+               document.getElementById('pf3-form').onsubmit = async e => {
       e.preventDefault();
       const errBox = document.getElementById('pf3-error');
       const saveBtn = document.getElementById('pf3-save');
@@ -4139,27 +4139,26 @@ SCREENS.profile = async function(el) {
           upi_id:          document.getElementById('pf3-upi').value.trim() || null,
         };
 
-                // Find the actual row ID first
+        // 🚨 THE FIX: Fetch the real ID and update it
         const { data: studioData, error: fetchErr } = await db.from('studio').select('id').limit(1).single();
         if (fetchErr) throw fetchErr;
         
-        // Update using the real ID
         const { error } = await db.from('studio').update(payload).eq('id', studioData.id);
         if (error) throw error;
         
-        alert('Profile saved.');
+        alert('Profile saved successfully!');
       
+        // Update the top header and sidebar name instantly
+        loadBrandName(); 
+        SCREENS.profile(el);
                 
-                // Update the top-left icon and sidebar name instantly
-                loadBrandName(); 
-                SCREENS.profile(el);
-                
-              } catch (err) {
-                errBox.textContent = err.message;
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Profile';
-              }
-            }; // Closes pf3-form.onsubmit
+      } catch (err) {
+        errBox.textContent = err.message;
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Profile';
+      }
+    };
 
             document.getElementById('pf3-logout').onclick = logout;
 
