@@ -4139,10 +4139,11 @@ SCREENS.profile = async function(el) {
           upi_id:          document.getElementById('pf3-upi').value.trim() || null,
         };
 
-        // 🚨 THE FIX: Fetch the real ID and update it
+                // 🚨 THE FIX: Fetch the real ID and update it
         const { data: studioData, error: fetchErr } = await db.from('studio').select('id').limit(1).single();
         if (fetchErr) throw fetchErr;
         
+        // Update using the real ID
         const { error } = await db.from('studio').update(payload).eq('id', studioData.id);
         if (error) throw error;
         
@@ -4659,35 +4660,33 @@ async function uploadImage(file, folder) {
 // LOAD BRAND NAME & LOGO (Robust for Members)
 // =====================================================================
 async function loadBrandName() {
-  const headerEl = document.getElementById('header-studio-name');
-  const profileLogo = document.getElementById('header-profile-logo');
-  const fallbackEmoji = document.getElementById('profile-fallback-emoji');
-
-  // 1. Force the fallback name immediately
-  if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
-
   try {
-    const { data, error } = await db.from('studio').select('name, logo_url').single();
+    // Use limit(1) instead of single() so it doesn't crash if you have 2 rows
+    const { data, error } = await db.from('studio').select('name, logo_url').limit(1);
     
     if (error) throw error;
 
-    // 2. If DB has a REAL name, use it. If it says "Studio Name", ignore it.
-    if (data && data.name && data.name !== 'Studio Name') {
-      if (headerEl) headerEl.textContent = data.name;
-    }
-    
-    // 3. Load logo
-    if (data && data.logo_url) {
-      if (profileLogo) { profileLogo.src = data.logo_url; profileLogo.style.display = 'block'; }
-      if (fallbackEmoji) fallbackEmoji.style.display = 'none';
-    } else {
-      if (profileLogo) profileLogo.style.display = 'none';
-      if (fallbackEmoji) fallbackEmoji.style.display = 'block';
+    if (data && data.length > 0) {
+      const studio = data[0]; // Grab the first row
+      
+      const headerEl = document.getElementById('header-studio-name');
+      if (headerEl) headerEl.textContent = studio.name || 'ELITE FRAME PRODUCTION';
+      
+      const profileLogo = document.getElementById('header-profile-logo');
+      const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+      
+      if (studio.logo_url) {
+        if (profileLogo) { profileLogo.src = studio.logo_url; profileLogo.style.display = 'block'; }
+        if (fallbackEmoji) fallbackEmoji.style.display = 'none';
+      } else {
+        if (profileLogo) profileLogo.style.display = 'none';
+        if (fallbackEmoji) fallbackEmoji.style.display = 'block';
+      }
     }
   } catch (err) {
-    console.warn('DB blocked or failed, using hardcoded fallback:', err);
-    if (profileLogo) profileLogo.style.display = 'none';
-    if (fallbackEmoji) fallbackEmoji.style.display = 'block';
+    console.warn('Could not load brand name from DB:', err);
+    const headerEl = document.getElementById('header-studio-name');
+    if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
   }
 }
 // =====================================================================
