@@ -964,3 +964,8 @@ tbody tr:hover {
   width: 28px !important; 
   height: 28px !important;
 }
+/* Center the bottom nav items even if only 1 or 2 are visible (for members) */
+.mobile-bottom-nav {
+  justify-content: center !important; 
+  gap: 24px !important; /* Space between visible icons */
+}
