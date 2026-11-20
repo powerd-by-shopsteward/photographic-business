@@ -409,11 +409,33 @@ SCREENS['live-projects'] = async function(el) {
 };
 SCREENS.projects = async function(el) {
   el.innerHTML = '<div class="loading">Loading projects…</div>';
+  const isOwner = CURRENT_PROFILE.role === 'owner';
 
   try {
-    const { data, error } = await db.from('projects')
+    // 1. Base query
+    let query = db.from('projects')
       .select('id, name, status, start_date, confirmed_amount, client:clients(name)')
       .order('start_date', { ascending: false, nullsFirst: false });
+
+    // 2. If member, restrict to their assigned projects ONLY
+    if (!isOwner) {
+      const { data: assigned, error: aErr } = await db.from('project_members')
+        .select('project_id')
+        .eq('team_member_id', CURRENT_PROFILE.team_member_id);
+      
+      if (aErr) throw aErr;
+      
+      const projectIds = (assigned || []).map(a => a.project_id);
+      
+      if (projectIds.length === 0) {
+        // If no projects, force an empty result
+        query = query.in('id', ['00000000-0000-0000-0000-000000000000']); 
+      } else {
+        query = query.in('id', projectIds);
+      }
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
 
     const all = data || [];
@@ -438,8 +460,8 @@ SCREENS.projects = async function(el) {
     el.innerHTML = `
       <div class="card">
         <div class="card-header">
-          <h2>Projects</h2>
-          <button id="btn-new-project">+ New Project</button>
+          <h2>${isOwner ? 'Projects' : 'My Projects'}</h2>
+          ${isOwner ? `<button id="btn-new-project">+ New Project</button>` : ''}
         </div>
 
         <div class="form-row mb-2">
@@ -468,22 +490,23 @@ SCREENS.projects = async function(el) {
               <tbody>
                 ${filtered.map(p => `
                   <tr style="cursor:pointer" onclick="location.hash='#project/${p.id}'">
-                   <td data-label="Project"><strong>${p.name}</strong></td>
-<td data-label="Client">${p.client?.name || '—'}</td>
-<td data-label="Date">${fmtDate(p.start_date)}</td>
-<td data-label="Status"><span class="${badgeClass(p.status)}">${p.status}</span></td>
-<td data-label="Amount" class="num">${fmtMoney(p.confirmed_amount)}</td>
+                    <td data-label="Project"><strong>${p.name}</strong></td>
+                    <td data-label="Client">${p.client?.name || '—'}</td>
+                    <td data-label="Date">${fmtDate(p.start_date)}</td>
+                    <td data-label="Status"><span class="${badgeClass(p.status)}">${p.status}</span></td>
+                    <td data-label="Amount" class="num">${fmtMoney(p.confirmed_amount)}</td>
                   </tr>
                 `).join('')}
               </tbody>
             </table>
           </div>
-        ` : `<p class="empty">No projects match. ${all.length === 0 ? 'Click "+ New Project" to create your first one.' : 'Try a different search or status.'}</p>`}
+        ` : `<p class="empty">${all.length === 0 ? 'No projects assigned to you yet.' : 'No projects match your search.'}</p>`}
       </div>
     `;
 
-    // Wire up
-    document.getElementById('btn-new-project').addEventListener('click', () => openProjectForm());
+    // Wire up events safely (only if they exist)
+    const btnNew = document.getElementById('btn-new-project');
+    if (btnNew) btnNew.addEventListener('click', () => openProjectForm());
 
     document.getElementById('proj-search').addEventListener('input', (e) => {
       PROJECTS_FILTER.search = e.target.value;
