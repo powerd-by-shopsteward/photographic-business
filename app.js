@@ -61,6 +61,7 @@ async function bootApp() {
     location.hash = CURRENT_PROFILE.role === 'owner' ? '#dashboard' : '#projects';
   }
   route();
+  checkNotifications();
 }
 
 function route() {
@@ -163,7 +164,57 @@ function todayISO() {
 function badgeClass(status) {
   return 'badge badge-' + (status || 'scheduled');
 }
+// =====================================================================
+// 🔴 IN-APP NOTIFICATIONS
+// =====================================================================
+window.UNREAD_PROJECTS = new Set(); // Store unread IDs globally
 
+async function checkNotifications() {
+  if (CURRENT_PROFILE?.role !== 'owner') return; // Only owners get notified
+
+  try {
+    const { data: updates, error } = await db.from('project_updates')
+      .select('project_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+      
+    if (error || !updates) return;
+
+    window.UNREAD_PROJECTS.clear();
+
+    updates.forEach(u => {
+      if (u.project_id) {
+        const lastViewed = localStorage.getItem('last_viewed_proj_' + u.project_id);
+        if (!lastViewed || new Date(u.created_at) > new Date(lastViewed)) {
+          window.UNREAD_PROJECTS.add(u.project_id);
+        }
+      }
+    });
+
+    // Update Sidebar
+    const liveNav = document.querySelector('.sidebar-pill a[data-screen="live-projects"]');
+    if (liveNav) {
+      const existing = liveNav.querySelector('.nav-badge');
+      if (existing) existing.remove();
+      if (window.UNREAD_PROJECTS.size > 0) {
+        liveNav.insertAdjacentHTML('beforeend', `<span class="nav-badge">${window.UNREAD_PROJECTS.size}</span>`);
+      }
+    }
+
+    // Update Mobile Bottom Nav
+    const mobileLive = document.querySelector('.mobile-bottom-nav a[data-screen="live-projects"]');
+    if (mobileLive) {
+      const existing = mobileLive.querySelector('.nav-badge');
+      if (existing) existing.remove();
+      if (window.UNREAD_PROJECTS.size > 0) {
+        mobileLive.insertAdjacentHTML('beforeend', `<span class="nav-badge" style="position:absolute; top: 4px; right: 12px; margin:0;">${window.UNREAD_PROJECTS.size}</span>`);
+      }
+    }
+
+  } catch (err) {
+    console.error('Notification check failed:', err);
+  }
+}
 // ===== DASHBOARD =====
 SCREENS.dashboard = async function(el) {
   el.innerHTML = '<div class="loading">Loading dashboard…</div>';
@@ -393,62 +444,6 @@ SCREENS.dashboard = async function(el) {
   }
 };
 
-// =====================================================================
-// IN-APP NOTIFICATIONS
-// =====================================================================
-window.UNREAD_PROJECTS = new Set(); // Store unread IDs globally
-
-async function checkNotifications() {
-  if (CURRENT_PROFILE?.role !== 'owner') return; // Only owners get notified
-
-  try {
-    // 1. Fetch recent updates (last 50 to keep it fast)
-    const { data: updates, error } = await db.from('project_updates')
-      .select('project_id, created_at')
-      .order('created_at', { ascending: false })
-      .limit(50);
-      
-    if (error || !updates) return;
-
-    window.UNREAD_PROJECTS.clear();
-
-    // 2. Compare update time to the last time the owner viewed the project
-    updates.forEach(u => {
-      if (u.project_id) {
-        const lastViewed = localStorage.getItem('last_viewed_proj_' + u.project_id);
-        // If never viewed, or the update is newer than the last view
-        if (!lastViewed || new Date(u.created_at) > new Date(lastViewed)) {
-          window.UNREAD_PROJECTS.add(u.project_id);
-        }
-      }
-    });
-
-    // 3. Update the Sidebar "Live Projects" Tab
-    const liveNav = document.querySelector('.sidebar-pill a[data-screen="live-projects"]');
-    if (liveNav) {
-      const existingBadge = liveNav.querySelector('.nav-badge');
-      if (existingBadge) existingBadge.remove();
-
-      if (window.UNREAD_PROJECTS.size > 0) {
-        liveNav.insertAdjacentHTML('beforeend', `<span class="nav-badge">${window.UNREAD_PROJECTS.size}</span>`);
-      }
-    }
-
-    // 4. Update the Mobile Bottom Nav (if visible)
-    const mobileLive = document.querySelector('.mobile-bottom-nav a[data-screen="live-projects"]');
-    if (mobileLive) {
-      const existingBadge = mobileLive.querySelector('.nav-badge');
-      if (existingBadge) existingBadge.remove();
-
-      if (window.UNREAD_PROJECTS.size > 0) {
-        mobileLive.insertAdjacentHTML('beforeend', `<span class="nav-badge" style="position:absolute; top: 4px; right: 12px; margin:0;">${window.UNREAD_PROJECTS.size}</span>`);
-      }
-    }
-
-  } catch (err) {
-    console.error('Notification check failed:', err);
-  }
-}
 
 // =====================================================================
 // BLOCK 2B — Projects list
@@ -547,7 +542,10 @@ SCREENS.projects = async function(el) {
               <tbody>
                 ${filtered.map(p => `
                   <tr style="cursor:pointer" onclick="location.hash='#project/${p.id}'">
-                    <td data-label="Project"><strong>${p.name}</strong></td>
+                    <td data-label="Project">
+  <strong>${p.name}</strong>
+  ${window.UNREAD_PROJECTS.has(p.id) ? '<span class="unread-dot"></span>' : ''}
+</td>
                     <td data-label="Client">${p.client?.name || '—'}</td>
                     <td data-label="Date">${fmtDate(p.start_date)}</td>
                     <td data-label="Status"><span class="${badgeClass(p.status)}">${p.status}</span></td>
@@ -1480,6 +1478,7 @@ function esc(s) {
 }
 SCREENS.project = async function(el, projectId) {
   if (!projectId) { el.innerHTML = '<div class="card"><p class="error">No project selected.</p></div>'; return; }
+  localStorage.setItem('last_viewed_proj_' + projectId, new Date().toISOString());
   el.innerHTML = '<div class="loading">Loading project…</div>';
   const isOwner = CURRENT_PROFILE.role === 'owner';
 
@@ -2132,6 +2131,7 @@ SCREENS.project = async function(el, projectId) {
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
+  checkNotifications();
 };
 
 // =====================================================================
