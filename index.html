@@ -4,33 +4,45 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Studio App</title>
-    <!-- Google Font for Header (Cinzel - Luxury Look) -->
+  
+  <!-- Google Font for Header (Cinzel - Luxury Look) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
   <!-- ============================================================
-       LOGIN SCREEN
+       LOGIN SCREEN (Split-Screen Layout)
        ============================================================ -->
-  <div id="login-screen" class="login-page">
-    <form id="login-form" class="login-box">
-      <h1>Studio Login</h1>
-      <input id="login-email" type="email" placeholder="Email"
-             required autocomplete="email">
-      <input id="login-password" type="password" placeholder="Password"
-             required autocomplete="current-password">
-      <button type="submit" style="width:100%">Login</button>
-      <p id="login-error" class="error"></p>
-    </form>
+  <div id="login-screen" class="login-page-split">
+    <div class="login-left">
+      <h1 class="brand-title" id="login-studio-name">Studio Name</h1>
+      <p class="brand-sub">Studio Management System</p>
+    </div>
+    <div class="login-right">
+      <form id="login-form" class="login-box-clean">
+        <h2>Welcome Back</h2>
+        <p class="muted small mb-2">Please enter your details to sign in.</p>
+        
+        <label>Email</label>
+        <input id="login-email" type="email" placeholder="admin@example.com" required autocomplete="email">
+        
+        <label>Password</label>
+        <input id="login-password" type="password" placeholder="••••••••" required autocomplete="current-password">
+        
+        <button type="submit" style="width:100%; margin-top: 10px;">Sign In</button>
+        <p id="login-error" class="error"></p>
+      </form>
+    </div>
   </div>
 
-    <!-- ============ APP SHELL ============ -->
+  <!-- ============ APP SHELL ============ -->
   <div id="app-shell" style="display:none">
 
-       <!-- Top Header -->
+    <!-- Top Header -->
     <header class="top-header">
       <div class="header-left"></div> <!-- Empty spacer to keep center perfect -->
       
@@ -102,7 +114,7 @@
       </nav>
     </aside>
 
-           <!-- MOBILE BOTTOM NAVIGATION -->
+    <!-- MOBILE BOTTOM NAVIGATION -->
     <nav class="mobile-bottom-nav">
       <!-- Owner Only: Dashboard -->
       <a href="#dashboard" data-screen="dashboard" data-role="owner">
@@ -156,8 +168,6 @@
 
   <!-- ============================================================
        SUPABASE CONFIG
-       Anon key is PUBLIC by design. RLS protects the data.
-       NEVER put the service_role key here.
        ============================================================ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -165,8 +175,8 @@
     window.SUPABASE_ANON = 'sb_publishable_ZUMIXO2a90bsYJPZqEFp8A_h7FqZZzW';
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
   <script src="app.js"></script>
 
 </body>
