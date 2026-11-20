@@ -394,6 +394,63 @@ SCREENS.dashboard = async function(el) {
 };
 
 // =====================================================================
+// IN-APP NOTIFICATIONS
+// =====================================================================
+window.UNREAD_PROJECTS = new Set(); // Store unread IDs globally
+
+async function checkNotifications() {
+  if (CURRENT_PROFILE?.role !== 'owner') return; // Only owners get notified
+
+  try {
+    // 1. Fetch recent updates (last 50 to keep it fast)
+    const { data: updates, error } = await db.from('project_updates')
+      .select('project_id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
+      
+    if (error || !updates) return;
+
+    window.UNREAD_PROJECTS.clear();
+
+    // 2. Compare update time to the last time the owner viewed the project
+    updates.forEach(u => {
+      if (u.project_id) {
+        const lastViewed = localStorage.getItem('last_viewed_proj_' + u.project_id);
+        // If never viewed, or the update is newer than the last view
+        if (!lastViewed || new Date(u.created_at) > new Date(lastViewed)) {
+          window.UNREAD_PROJECTS.add(u.project_id);
+        }
+      }
+    });
+
+    // 3. Update the Sidebar "Live Projects" Tab
+    const liveNav = document.querySelector('.sidebar-pill a[data-screen="live-projects"]');
+    if (liveNav) {
+      const existingBadge = liveNav.querySelector('.nav-badge');
+      if (existingBadge) existingBadge.remove();
+
+      if (window.UNREAD_PROJECTS.size > 0) {
+        liveNav.insertAdjacentHTML('beforeend', `<span class="nav-badge">${window.UNREAD_PROJECTS.size}</span>`);
+      }
+    }
+
+    // 4. Update the Mobile Bottom Nav (if visible)
+    const mobileLive = document.querySelector('.mobile-bottom-nav a[data-screen="live-projects"]');
+    if (mobileLive) {
+      const existingBadge = mobileLive.querySelector('.nav-badge');
+      if (existingBadge) existingBadge.remove();
+
+      if (window.UNREAD_PROJECTS.size > 0) {
+        mobileLive.insertAdjacentHTML('beforeend', `<span class="nav-badge" style="position:absolute; top: 4px; right: 12px; margin:0;">${window.UNREAD_PROJECTS.size}</span>`);
+      }
+    }
+
+  } catch (err) {
+    console.error('Notification check failed:', err);
+  }
+}
+
+// =====================================================================
 // BLOCK 2B — Projects list
 // =====================================================================
 
