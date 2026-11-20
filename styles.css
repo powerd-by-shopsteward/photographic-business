@@ -874,7 +874,7 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   LIGHT FROSTED GLASS ACTIVE TAB (Perfect Circle)
+   SMART GLASS ACTIVE TAB (Circle when closed, Pill when open)
    ============================================================ */
 
 /* 1. Completely destroy the green floating capsule */
@@ -883,7 +883,9 @@ tbody tr:hover {
   content: none !important;
 }
 
-/* 2. The Perfect Circular Glass Bubble */
+/* =========================================
+   STATE 1: COLLAPSED (The Perfect Circle)
+   ========================================= */
 .sidebar-pill a.active {
   /* Force it to be a perfect circle */
   width: 48px !important; 
@@ -910,21 +912,43 @@ tbody tr:hover {
   border: 1px solid rgba(255, 255, 255, 0.9) !important;
   
   box-shadow: 
-    inset 0 2px 4px rgba(255, 255, 255, 1),       /* Sharp white top edge */
-    inset 0 -1px 2px rgba(0, 0, 0, 0.1),          /* Soft dark bottom edge */
-    0 4px 12px rgba(0, 0, 0, 0.08) !important;    /* Soft floating shadow */
-    
-  transform: none !important;
+    inset 0 2px 4px rgba(255, 255, 255, 1),       
+    inset 0 -1px 2px rgba(0, 0, 0, 0.1),          
+    0 4px 12px rgba(0, 0, 0, 0.08) !important;    
 }
 
-/* 3. Stop the hidden text from pushing the icon out */
+/* Hide the text when collapsed so it doesn't push the icon */
 .sidebar-pill a.active span {
-  display: none !important; /* Hides the text so it doesn't take up space */
+  display: none !important; 
 }
 
-/* Ensure the icon stays exactly in the middle */
-.sidebar-pill a.active .nav-icon {
+
+/* =========================================
+   STATE 2: EXPANDED (Hover state)
+   ========================================= */
+/* Revert to the normal wide tab shape when sidebar expands */
+.sidebar-pill:hover a.active {
+  width: 100% !important;
+  height: auto !important;
+  border-radius: 14px !important;
   margin: 0 !important;
-  width: 26px !important; /* Slightly smaller icon to fit the circle */
-  height: 26px !important;
+  padding: 12px !important;
+  justify-content: flex-start !important;
+  
+  /* Optional: Keep a slight glass tint when expanded */
+  background: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05) !important;
+}
+
+/* Show the text again when expanded */
+.sidebar-pill:hover a.active span {
+  display: block !important;
+  opacity: 1 !important;
+}
+
+/* Ensure the icon sits nicely next to the text when expanded */
+.sidebar-pill:hover a.active .nav-icon {
+  margin-right: 16px !important; /* Adjusts spacing between icon and text */
+  width: 28px !important; /* Restore original icon size */
+  height: 28px !important;
 }
