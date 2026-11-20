@@ -1014,3 +1014,104 @@ tbody tr:hover {
   70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
   100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
+/* OPTION 1: SPLIT SCREEN GLASS LOGIN */
+.login-page-split {
+  /* Forces the layout into 2 columns */
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  place-items: center;
+  gap: 40px;
+  min-height: 100vh;
+  padding: 40px;
+  
+  /* Deep cinematic background to make the glass pop */
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+}
+
+/* Shared Glass Styles for both halves */
+.login-left, .login-right {
+  width: 100%;
+  max-width: 450px;
+  min-height: 500px;
+  border-radius: 24px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 50px;
+}
+
+/* Left Side - Darker Glass */
+.login-left {
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+}
+
+/* Right Side - Lighter Glass */
+.login-right {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+}
+
+/* Typography */
+.brand-title { 
+  font-family: 'Cinzel', serif; 
+  font-size: 42px; 
+  margin-bottom: 12px; 
+  color: #ffffff; 
+  line-height: 1.1;
+}
+.brand-sub { 
+  font-size: 16px; 
+  color: #94a3b8; 
+  letter-spacing: 1px;
+}
+
+/* Form Styling inside Glass */
+.login-box-clean {
+  width: 100%;
+}
+.login-box-clean h2 { 
+  font-size: 28px; 
+  margin-bottom: 8px; 
+  color: #ffffff; 
+}
+.login-box-clean label { 
+  color: #cbd5e1; 
+}
+.login-box-clean input {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+.login-box-clean input:focus {
+  border-color: #3b82f6 !important;
+  background: rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+}
+.login-box-clean button {
+  background: #3b82f6 !important;
+  color: #fff;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.login-box-clean button:hover {
+  background: #2563eb !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+  .login-page-split { 
+    grid-template-columns: 1fr; 
+    padding: 20px;
+  }
+  /* Hide the branding side on mobile to focus on the login form */
+  .login-left { 
+    display: none !important; 
+  }
+  .login-right {
+    min-height: auto;
+    padding: 40px 30px;
+  }
+}
