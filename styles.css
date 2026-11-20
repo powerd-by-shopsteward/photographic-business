@@ -874,7 +874,7 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   LIGHT FROSTED GLASS ACTIVE TAB (Round)
+   LIGHT FROSTED GLASS ACTIVE TAB (Perfect Circle)
    ============================================================ */
 
 /* 1. Completely destroy the green floating capsule */
@@ -883,12 +883,18 @@ tbody tr:hover {
   content: none !important;
 }
 
-/* 2. Light, transparent glass background & Perfect Circle */
+/* 2. The Perfect Circular Glass Bubble */
 .sidebar-pill a.active {
   /* Force it to be a perfect circle */
+  width: 48px !important; 
+  height: 48px !important;
   border-radius: 50% !important;
-  aspect-ratio: 1 / 1 !important; /* Ensures width and height are identical */
-  padding: 0 !important; /* Removes padding so it stays perfectly round */
+  
+  /* Center the circle inside the sidebar */
+  margin: 0 auto !important; 
+  
+  /* Center the icon inside the circle */
+  padding: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -896,31 +902,29 @@ tbody tr:hover {
   /* The Glass Effect */
   background: 
     radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 70%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
+    linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.1) 100%) !important;
   
   backdrop-filter: blur(16px) saturate(150%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
   
-  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.9) !important;
   
   box-shadow: 
     inset 0 2px 4px rgba(255, 255, 255, 1),       /* Sharp white top edge */
     inset 0 -1px 2px rgba(0, 0, 0, 0.1),          /* Soft dark bottom edge */
     0 4px 12px rgba(0, 0, 0, 0.08) !important;    /* Soft floating shadow */
     
-  color: #2563eb !important;
   transform: none !important;
 }
 
-/* Fix the width/height to ensure it's a circle */
-.sidebar-pill a.active {
-  width: 52px !important; /* Adjust this if you want it bigger/smaller */
-  height: 52px !important;
-  margin: 0 auto !important; /* Centers the circle in the sidebar */
+/* 3. Stop the hidden text from pushing the icon out */
+.sidebar-pill a.active span {
+  display: none !important; /* Hides the text so it doesn't take up space */
 }
 
-/* Ensure the text label stays blue when the sidebar expands */
-.sidebar-pill a.active span {
-  color: #2563eb !important;
-  text-shadow: none !important;
+/* Ensure the icon stays exactly in the middle */
+.sidebar-pill a.active .nav-icon {
+  margin: 0 !important;
+  width: 26px !important; /* Slightly smaller icon to fit the circle */
+  height: 26px !important;
 }
