@@ -66,6 +66,12 @@ async function bootApp() {
 function route() {
   const hash = location.hash.replace('#', '') || 'dashboard';
   const [name, param] = hash.split('/');
+    // 🔥 FIX: Reset the project filter when navigating via the sidebar
+  if (name === 'projects') {
+    PROJECTS_FILTER.status = 'all';
+  } else if (name === 'live-projects') {
+    PROJECTS_FILTER.status = 'live';
+  }
 
   // Map nested routes to their sidebar parent (for active highlight)
     const SIDEBAR_MAP = {
@@ -395,7 +401,11 @@ let PROJECTS_FILTER = { search: '', status: 'all' };
 
 SCREENS['live-projects'] = async function(el) {
   PROJECTS_FILTER.status = 'live';
-  return SCREENS.projects(el);
+  await SCREENS.projects(el);
+  
+  // Change the title header to show "Live Projects"
+  const title = el.querySelector('.card-header h2');
+  if (title) title.textContent = 'Live Projects';
 };
 SCREENS.projects = async function(el) {
   el.innerHTML = '<div class="loading">Loading projects…</div>';
