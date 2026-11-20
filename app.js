@@ -4596,27 +4596,48 @@ async function uploadImage(file, folder) {
 }
 
 // =====================================================================
-// LOAD BRAND NAME & LOGO
+// LOAD BRAND NAME & LOGO (Robust for Members)
 // =====================================================================
 async function loadBrandName() {
-  const { data } = await db.from('studio').select('name, logo_url').single();
-  
-  // 1. Set Studio Name in the center
-  if (data?.name) {
-    document.getElementById('header-studio-name').textContent = data.name;
-  }
-  
-  // 2. Set Studio Logo as the Profile Button
-  const profileLogo = document.getElementById('header-profile-logo');
-  const fallbackEmoji = document.getElementById('profile-fallback-emoji');
-  
-  if (data?.logo_url) {
-    profileLogo.src = data.logo_url;
-    profileLogo.style.display = 'block';
-    fallbackEmoji.style.display = 'none';
-  } else {
-    profileLogo.style.display = 'none';
-    fallbackEmoji.style.display = 'block';
+  try {
+    const { data, error } = await db.from('studio').select('name, logo_url').single();
+    
+    // If Supabase blocks the member via RLS, this will throw an error
+    if (error) throw error;
+
+    // 1. Set Studio Name in the center
+    if (data?.name) {
+      document.getElementById('header-studio-name').textContent = data.name;
+    }
+    
+    // 2. Set Studio Logo as the Profile Button
+    const profileLogo = document.getElementById('header-profile-logo');
+    const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+    
+    if (data?.logo_url) {
+      profileLogo.src = data.logo_url;
+      profileLogo.style.display = 'block';
+      fallbackEmoji.style.display = 'none';
+    } else {
+      profileLogo.style.display = 'none';
+      fallbackEmoji.style.display = 'block';
+    }
+
+  } catch (err) {
+    console.warn('Could not load brand name/logo from DB (Fallback applied):', err);
+    
+    // 🚨 FALLBACK FOR MEMBERS (or if internet fails)
+    // If the database blocks the member, we hardcode the name here so it doesn't say "Studio Name"
+    const headerEl = document.getElementById('header-studio-name');
+    if (headerEl && headerEl.textContent === 'Studio Name') {
+      headerEl.textContent = 'ELITE FRAME PRODUCTION'; 
+    }
+
+    // Ensure the emoji shows up if the logo can't be fetched
+    const profileLogo = document.getElementById('header-profile-logo');
+    const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+    if (profileLogo) profileLogo.style.display = 'none';
+    if (fallbackEmoji) fallbackEmoji.style.display = 'block';
   }
 }
 
