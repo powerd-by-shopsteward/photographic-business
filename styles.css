@@ -874,41 +874,49 @@ tbody tr:hover {
   .mobile-bottom-nav { display: none !important; }
 }
 /* ============================================================
-   SMART GLASS ACTIVE TAB (Smooth Morphing)
+   SMART GLASS ACTIVE TAB (Flawless Centering & Smooth Morph)
    ============================================================ */
 
-/* 1. Add a smooth transition to the link itself for shape morphing */
+/* 1. Base transition for the link */
 .sidebar-pill a {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  gap: 0 !important; /* Removes the original 16px gap that was pushing the icon */
 }
 
-/* 2. Smooth fade for the text labels */
+/* 2. Restore the gap only when hovered */
+.sidebar-pill:hover a {
+  gap: 16px !important; 
+}
+
+/* 3. Smooth fade for the text labels */
 .sidebar-pill a span {
   display: inline-block !important;
   opacity: 0;
   max-width: 0;
   overflow: hidden;
-  transform: translateX(-10px);
-  transition: opacity 0.3s ease, max-width 0.3s ease, transform 0.3s ease !important;
+  /* Removed translateX to prevent flexbox centering issues */
+  transition: opacity 0.3s ease, max-width 0.3s ease !important;
 }
 
 .sidebar-pill:hover a span {
   opacity: 1 !important;
   max-width: 200px !important;
-  transform: translateX(0) !important;
+}
+
+/* 4. Kill the green pill */
+.sidebar-pill nav a.active::before {
+  display: none !important; 
 }
 
 /* =========================================
    STATE 1: COLLAPSED (The Perfect Circle)
    ========================================= */
-.sidebar-pill nav a.active::before {
-  display: none !important; /* Kill the green pill */
-}
-
 .sidebar-pill a.active {
   width: 48px !important; 
   height: 48px !important;
   border-radius: 50% !important;
+  
+  /* Force perfect centering */
   margin: 0 auto !important; 
   padding: 0 !important;
   display: flex !important;
@@ -942,7 +950,7 @@ tbody tr:hover {
    ========================================= */
 .sidebar-pill:hover a.active {
   width: 100% !important;
-  height: 46px !important; /* Keeps it a perfect tab height */
+  height: 46px !important; 
   border-radius: 14px !important;
   margin: 0 !important;
   padding: 0 12px !important;
@@ -952,7 +960,7 @@ tbody tr:hover {
 
 /* Push the icon to the left slightly when expanded */
 .sidebar-pill:hover a.active .nav-icon {
-  margin-right: 16px !important; 
+  margin-right: 0 !important; /* Gap handles this now */
   width: 28px !important; 
   height: 28px !important;
 }
