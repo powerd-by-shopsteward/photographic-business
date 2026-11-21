@@ -1101,16 +1101,13 @@ SCREENS.members = async function(el) {
                     : '<span class="muted small">none</span>';
 
                   return `<tr>
-                   <td data-label="Name"><strong>${m.name}</strong>...</td>
-<td data-label="Phone">${m.phone || '—'}</td>
-<td data-label="Role">${m.role || '—'}</td>
-<td data-label="Login">${loginCell}</td>
-<td data-label="Total Owed" class="num">${fmtMoney(s.owed)}</td>
-<td data-label="Total Paid" class="num" style="color:#059669;">${fmtMoney(s.paid)}</td>
-<td data-label="Balance Due" class="num" style="font-weight:bold; color:${balance > 0 ? '#dc2626' : '#059669'};">${fmtMoney(balance)}</td>
-<td data-label="Actions" class="actions">...</td>
-                      ${fmtMoney(balance)}
-                    </td>
+                    <td data-label="Name"><strong>${m.name}</strong>${m.active ? '' : ' <span class="badge badge-cancelled">inactive</span>'}</td>
+                    <td data-label="Phone">${m.phone || '—'}</td>
+                    <td data-label="Role">${m.role || '—'}</td>
+                    <td data-label="Login">${loginCell}</td>
+                    <td data-label="Total Owed" class="num">${fmtMoney(s.owed)}</td>
+                    <td data-label="Total Paid" class="num" style="color:#059669;">${fmtMoney(s.paid)}</td>
+                    <td data-label="Balance Due" class="num" style="font-weight:bold; color:${balance > 0 ? '#dc2626' : '#059669'};">${fmtMoney(balance)}</td>
                     <td class="actions">
                       <button class="btn-secondary btn-sm" data-edit="${m.id}">Edit</button>
                     </td>
@@ -1345,13 +1342,13 @@ SCREENS.clients = async function(el) {
               <tbody>
                 ${clients.map(c => {
                   const s = stats[c.id] || { count: 0, total: 0 };
-                  return `<tr>
+                                    return `<tr>
                     <td data-label="Name"><strong>${c.name}</strong></td>
-<td data-label="Phone">${c.phone || '—'}</td>
-<td data-label="Email">${c.email || '—'}</td>
-<td data-label="Projects" class="num">${s.count}</td>
-<td data-label="Total Value" class="num">${s.total ? fmtMoney(s.total) : '—'}</td>
-<td data-label="Actions" class="actions">...</td>
+                    <td data-label="Phone">${c.phone || '—'}</td>
+                    <td data-label="Email">${c.email || '—'}</td>
+                    <td data-label="Projects" class="num">${s.count}</td>
+                    <td data-label="Total Value" class="num">${s.total ? fmtMoney(s.total) : '—'}</td>
+                    <td class="actions">
                       <button class="btn-secondary btn-sm" data-edit="${c.id}">Edit</button>
                       <button class="btn-danger btn-sm" data-del="${c.id}" data-name="${c.name.replace(/"/g,'&quot;')}">Delete</button>
                     </td>
