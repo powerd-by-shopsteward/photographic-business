@@ -1238,7 +1238,7 @@ async function openMemberForm(existing, profile, onSuccess = null) {
   document.getElementById('mf-cancel').onclick = () => backdrop.remove();
   backdrop.addEventListener('click', e => { if (e.target === backdrop) backdrop.remove(); });
 
-  document.getElementById('mf-form').onsubmit = async e => {
+   document.getElementById('mf-form').onsubmit = async e => {
     e.preventDefault();
     const errBox  = document.getElementById('mf-error');
     const saveBtn = document.getElementById('mf-save');
@@ -1259,8 +1259,8 @@ async function openMemberForm(existing, profile, onSuccess = null) {
       };
       if (!payload.name || !payload.phone) throw new Error('Name and phone are required');
 
-          try {
       let createdMember = null;
+      
       if (isEdit) {
         const { error } = await db.from('team_members').update(payload).eq('id', existing.id);
         if (error) throw error;
@@ -1283,13 +1283,13 @@ async function openMemberForm(existing, profile, onSuccess = null) {
         // Otherwise, just refresh the main members screen
         SCREENS.members(document.getElementById('screen-members'));
       }
+
     } catch (err) {
       errBox.textContent  = err.message;
       saveBtn.disabled    = false;
       saveBtn.textContent = isEdit ? 'Save Changes' : 'Add Member';
     }
   };
-}
 
 // =====================================================================
 // BLOCK 4A — Clients screen
