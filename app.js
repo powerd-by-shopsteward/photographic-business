@@ -1530,6 +1530,10 @@ SCREENS.project = async function(el, projectId) {
     const myRow = members.find(m =>
       m.team_member_id === CURRENT_PROFILE.team_member_id);
 
+    // 🚨 NEW PERMISSION LOGIC 🚨
+    const isLive = project.status === 'live';
+    const canEdit = isOwner || (isMemberOnProject && isLive);
+
     const tabs = isOwner
       ? [['overview','Overview'],['team','Team'],['stages','Stages'],['updates','Updates'],
          ['gear','Gear'],['expenses','Expenses'],['invoices','Invoices'],['agreement','Agreement']]
@@ -1791,7 +1795,7 @@ SCREENS.project = async function(el, projectId) {
 
     // ============ STAGES ============
     function renderStages() {
-      const canTick = isOwner || isMemberOnProject;
+            const canTick = canEdit; // Members can only tick if the project is live
       return `
         <div class="card">
           <div class="card-header">
@@ -1854,8 +1858,9 @@ SCREENS.project = async function(el, projectId) {
     }
 
     // ============ UPDATES ============
-    function renderUpdates() {
+       function renderUpdates() {
       return `
+        ${canEdit ? `
         <div class="card">
           <h2>Post an Update</h2>
           <div class="form-row">
@@ -1869,6 +1874,11 @@ SCREENS.project = async function(el, projectId) {
           <p id="up-error" class="error"></p>
           <button id="up-post">Post</button>
         </div>
+        ` : `
+        <div class="card" style="background: rgba(255,255,255,0.4); border: 1px dashed #cbd5e1;">
+           <p class="muted small" style="margin:0; text-align:center;">🔒 You can only post updates while the project is marked as <strong>Live</strong>.</p>
+        </div>
+        `}
         <div class="card">
           <h2>Timeline</h2>
           ${updates.length ? updates.map(u => `
@@ -1886,8 +1896,13 @@ SCREENS.project = async function(el, projectId) {
           : '<p class="empty">No updates yet.</p>'}
         </div>`;
     }
-    function wireUpdates() {
-      document.getElementById('up-post').onclick = async () => {
+        function wireUpdates() {
+      const postBtn = document.getElementById('up-post');
+      
+      // 🚨 SAFETY CHECK: If button doesn't exist (because project isn't live), do nothing.
+      if (!postBtn) return; 
+
+      postBtn.onclick = async () => {
         const type = document.getElementById('up-type').value;
         const body = document.getElementById('up-body').value.trim();
         const errBox = document.getElementById('up-error');
@@ -1901,7 +1916,6 @@ SCREENS.project = async function(el, projectId) {
         reloadProject();
       };
     }
-
     // ============ GEAR ============
     function renderGear() {
       const studioGear   = gear.filter(g => g.gadget_id);
