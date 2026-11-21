@@ -1290,7 +1290,7 @@ async function openMemberForm(existing, profile, onSuccess = null) {
       saveBtn.textContent = isEdit ? 'Save Changes' : 'Add Member';
     }
   };
-
+}
 // =====================================================================
 // BLOCK 4A — Clients screen
 // =====================================================================
