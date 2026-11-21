@@ -4662,20 +4662,25 @@ async function uploadImage(file, folder) {
 // LOAD BRAND NAME & LOGO (Robust for Members)
 // =====================================================================
 async function loadBrandName() {
+  const headerEl = document.getElementById('header-studio-name');
+  const profileLogo = document.getElementById('header-profile-logo');
+  const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+
+  // 1. Instantly force the correct name on load (prevents flashing "Studio Name")
+  if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
+
   try {
-    // Use limit(1) instead of single() so it doesn't crash if you have 2 rows
     const { data, error } = await db.from('studio').select('name, logo_url').limit(1);
     
     if (error) throw error;
 
     if (data && data.length > 0) {
-      const studio = data[0]; // Grab the first row
+      const studio = data[0];
       
-      const headerEl = document.getElementById('header-studio-name');
-      if (headerEl) headerEl.textContent = studio.name || 'ELITE FRAME PRODUCTION';
-      
-      const profileLogo = document.getElementById('header-profile-logo');
-      const fallbackEmoji = document.getElementById('profile-fallback-emoji');
+      // 2. Only override if the DB has a real name (not the default placeholder)
+      if (studio.name && studio.name.trim().toUpperCase() !== 'STUDIO NAME') {
+        if (headerEl) headerEl.textContent = studio.name;
+      }
       
       if (studio.logo_url) {
         if (profileLogo) { profileLogo.src = studio.logo_url; profileLogo.style.display = 'block'; }
@@ -4686,9 +4691,8 @@ async function loadBrandName() {
       }
     }
   } catch (err) {
-    console.warn('Could not load brand name from DB:', err);
-    const headerEl = document.getElementById('header-studio-name');
-    if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
+    console.warn('DB blocked or failed. Using hardcoded fallback name.');
+    // 3. If DB fails (RLS or network), the hardcoded name from Step 1 remains!
   }
 }
 // =====================================================================
