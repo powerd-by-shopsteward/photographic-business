@@ -3872,13 +3872,18 @@ SCREENS['studio-value'] = async function(el) {
     const equipmentValue = gadgets.reduce((s, g) =>
       s + Number(g.current_value || g.purchase_price || 0), 0);
 
-    // ---- 2. Cash in Hand (actual bank movement) ----
+      // ---- 2. Cash in Hand (actual bank movement) ----
     let totalIn = 0, totalOut = 0;
     pays.forEach(p => {
       if (p.direction === 'in')  totalIn  += Number(p.amount);
       if (p.direction === 'out') totalOut += Number(p.amount);
     });
-    const cashInHand = totalIn - totalOut;
+
+    // Calculate total expenses to subtract from cash in hand
+    const totalExpenses = exps.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+    // The true Cash in Hand = Money In - Money Out - Total Expenses
+    const cashInHand = totalIn - totalOut - totalExpenses;
 
     // ---- Aggregators per project ----
     const receivedByProject = {};
