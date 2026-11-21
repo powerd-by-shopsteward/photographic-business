@@ -1473,6 +1473,10 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 }
+let CURRENT_PROJECT_TAB = 'overview';
+let CURRENT_PROJECT_ID = null;
+
+SCREENS.project = async function(el, projectId) {
 SCREENS.project = async function(el, projectId) {
   if (!projectId) { el.innerHTML = '<div class="card"><p class="error">No project selected.</p></div>'; return; }
   localStorage.setItem('last_viewed_proj_' + projectId, new Date().toISOString());
@@ -1534,11 +1538,23 @@ SCREENS.project = async function(el, projectId) {
     const isLive = project.status === 'live';
     const canEdit = isOwner || (isMemberOnProject && isLive);
 
-    const tabs = isOwner
+        const tabs = isOwner
       ? [['overview','Overview'],['team','Team'],['stages','Stages'],['updates','Updates'],
          ['gear','Gear'],['expenses','Expenses'],['invoices','Invoices'],['agreement','Agreement']]
       : [['stages','Stages'],['updates','Updates'],['gear','Gear']];
-    let activeTab = tabs[0][0];
+
+    // 🚨 Remember the tab unless we are opening a completely DIFFERENT project
+    if (CURRENT_PROJECT_ID !== projectId) {
+      CURRENT_PROJECT_TAB = tabs[0][0]; // Default to first tab for new project
+      CURRENT_PROJECT_ID = projectId;
+    }
+
+    // 🚨 Safety check: If a member tries to load an owner-only tab, reset it
+    if (!tabs.some(t => t[0] === CURRENT_PROJECT_TAB)) {
+      CURRENT_PROJECT_TAB = tabs[0][0];
+    }
+
+    let activeTab = CURRENT_PROJECT_TAB;
 
     el.innerHTML = `
       <div class="card">
@@ -1606,13 +1622,13 @@ SCREENS.project = async function(el, projectId) {
       b.onclick = () => switchTab(b.dataset.tab);
     });
 
-    function switchTab(k) {
+       function switchTab(k) {
       activeTab = k;
+      CURRENT_PROJECT_TAB = k; // 🚨 Save the tab globally so it survives the reload
       document.querySelectorAll('#ptabs button').forEach(b =>
         b.classList.toggle('active', b.dataset.tab === k));
       renderTab(k);
     }
-
     async function renderTab(k) {
       const t = document.getElementById('ptab');
       try {
