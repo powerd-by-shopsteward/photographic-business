@@ -1469,7 +1469,7 @@ let CURRENT_PROJECT_TAB = 'overview';
 let CURRENT_PROJECT_ID = null;
 
 SCREENS.project = async function(el, projectId) {
-SCREENS.project = async function(el, projectId) {
+
   if (!projectId) { el.innerHTML = '<div class="card"><p class="error">No project selected.</p></div>'; return; }
   localStorage.setItem('last_viewed_proj_' + projectId, new Date().toISOString());
   el.innerHTML = '<div class="loading">Loading project…</div>';
