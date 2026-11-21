@@ -1473,6 +1473,7 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','`':'&#96;'}[c]));
 }
+
 let CURRENT_PROJECT_TAB = 'overview';
 let CURRENT_PROJECT_ID = null;
 
