@@ -1288,15 +1288,6 @@ async function openMemberForm(existing, profile, onSuccess = null) {
       saveBtn.disabled    = false;
       saveBtn.textContent = isEdit ? 'Save Changes' : 'Add Member';
     }
-
-      backdrop.remove();
-      SCREENS.members(document.getElementById('screen-members'));
-
-    } catch (err) {
-      errBox.textContent  = err.message;
-      saveBtn.disabled    = false;
-      saveBtn.textContent = isEdit ? 'Save Changes' : 'Add Member';
-    }
   };
 }
 
