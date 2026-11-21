@@ -1875,7 +1875,7 @@ SCREENS.project = async function(el, projectId) {
     }
 
     // ============ UPDATES ============
-       function renderUpdates() {
+          function renderUpdates() {
       return `
         ${canEdit ? `
         <div class="card">
@@ -1913,10 +1913,8 @@ SCREENS.project = async function(el, projectId) {
           : '<p class="empty">No updates yet.</p>'}
         </div>`;
     }
-        function wireUpdates() {
+            function wireUpdates() {
       const postBtn = document.getElementById('up-post');
-      
-      // 🚨 SAFETY CHECK: If button doesn't exist (because project isn't live), do nothing.
       if (!postBtn) return; 
 
       postBtn.onclick = async () => {
