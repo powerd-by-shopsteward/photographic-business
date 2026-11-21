@@ -4662,25 +4662,31 @@ async function uploadImage(file, folder) {
 // LOAD BRAND NAME & LOGO (Robust for Members)
 // =====================================================================
 async function loadBrandName() {
+  console.log("🟢 loadBrandName() started running...");
+  
   const headerEl = document.getElementById('header-studio-name');
   const profileLogo = document.getElementById('header-profile-logo');
   const fallbackEmoji = document.getElementById('profile-fallback-emoji');
 
-  // 1. Instantly force the correct name on load (prevents flashing "Studio Name")
-  if (headerEl) headerEl.textContent = 'ELITE FRAME PRODUCTION';
+  if (!headerEl) {
+    console.error("🔴 ERROR: Could not find the element with id 'header-studio-name' in the HTML!");
+    return;
+  }
 
   try {
     const { data, error } = await db.from('studio').select('name, logo_url').limit(1);
     
-    if (error) throw error;
+    if (error) {
+      console.error("🔴 Database Error:", error);
+      throw error;
+    }
+
+    console.log("🟢 Data fetched from database:", data);
 
     if (data && data.length > 0) {
-      const studio = data[0];
-      
-      // 2. Only override if the DB has a real name (not the default placeholder)
-      if (studio.name && studio.name.trim().toUpperCase() !== 'STUDIO NAME') {
-        if (headerEl) headerEl.textContent = studio.name;
-      }
+      const studio = data[0]; 
+      headerEl.textContent = studio.name || 'ELITE FRAME PRODUCTION';
+      console.log("🟢 Header text changed to:", headerEl.textContent);
       
       if (studio.logo_url) {
         if (profileLogo) { profileLogo.src = studio.logo_url; profileLogo.style.display = 'block'; }
@@ -4689,10 +4695,13 @@ async function loadBrandName() {
         if (profileLogo) profileLogo.style.display = 'none';
         if (fallbackEmoji) fallbackEmoji.style.display = 'block';
       }
+    } else {
+      console.warn("🟡 Database returned 0 rows. Using fallback.");
+      headerEl.textContent = 'ELITE FRAME PRODUCTION';
     }
   } catch (err) {
-    console.warn('DB blocked or failed. Using hardcoded fallback name.');
-    // 3. If DB fails (RLS or network), the hardcoded name from Step 1 remains!
+    console.error("🔴 Caught error in loadBrandName:", err);
+    headerEl.textContent = 'ELITE FRAME PRODUCTION';
   }
 }
 // =====================================================================
