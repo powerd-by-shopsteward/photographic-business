@@ -3007,12 +3007,29 @@ SCREENS.gadgets = async function(el) {
         const { data } = await db.from('member_gadgets').select('*').eq('id', b.dataset.mgedit).single();
         if (data) openMemberGadgetForm(data, members);
       });
-      panel.querySelectorAll('[data-mgdel]').forEach(b => b.onclick = async () => {
-        if (!confirm(`Delete "${b.dataset.mgname}"?`)) return;
-        const { error } = await db.from('member_gadgets').delete().eq('id', b.dataset.mgdel);
-        if (error) { alert(error.message); return; }
-        SCREENS.gadgets(el);
-      });
+     panel.querySelectorAll('[data-mgdel]').forEach(b => b.onclick = async () => {
+  if (!confirm(`Delete "${b.dataset.mgname}"?`)) return;
+  
+  // 1. Check if this gear is used in any project_gear rows
+  const { data: usedInProjects, error: checkErr } = await db
+    .from('project_gear')
+    .select('id')
+    .eq('member_gadget_id', b.dataset.mgdel)
+    .limit(1);
+
+  if (checkErr) { alert("Error checking gear usage: " + checkErr.message); return; }
+
+  if (usedInProjects && usedInProjects.length > 0) {
+    alert("Cannot delete this item because it is assigned to a project. Please remove it from the project first.");
+    return;
+  }
+
+  // 2. Safe to delete
+  const { error } = await db.from('member_gadgets').delete().eq('id', b.dataset.mgdel);
+  if (error) { alert("Database Error: " + error.message); return; }
+  
+  SCREENS.gadgets(el);
+});
     }
 
   } catch (err) {
