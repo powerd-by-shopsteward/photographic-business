@@ -1946,17 +1946,19 @@ SCREENS.project = async function(el, projectId) {
             </table>
           ` : '<p class="empty">No studio gear attached.</p>'}
         </div>
-        <div class="card">
+               <div class="card">
           <h2>Member's Own Gear (${memberGear.length})</h2>
           ${memberGear.length ? `
             <table>
-              <thead><tr><th>Item</th><th>Carried By</th><th>Returned</th></tr></thead>
+              <thead><tr><th>Item</th><th>Carried By</th><th>Returned</th><th></th></tr></thead>
               <tbody>
                 ${memberGear.map(g => `
                   <tr>
                     <td>${esc(g.member_gadget?.name || '—')}</td>
                     <td>${esc(g.carrier?.name || '—')}</td>
                     <td><span class="badge badge-${g.returned ? 'signed' : 'scheduled'}">${g.returned ? 'yes' : 'no'}</span></td>
+                    <td class="actions">${isOwner ?
+                      `<button class="btn-danger btn-sm" data-rmgear="${g.id}">Remove</button>` : ''}</td>
                   </tr>`).join('')}
               </tbody>
             </table>
@@ -1969,6 +1971,14 @@ SCREENS.project = async function(el, projectId) {
           const { error } = await db.from('project_gear').update({
             returned: true, returned_at: new Date().toISOString(),
           }).eq('id', b.dataset.ret);
+          if (error) { alert(error.message); return; }
+          reloadProject();
+        };
+      });
+       document.querySelectorAll('[data-rmgear]').forEach(b => {
+        b.onclick = async () => {
+          if (!confirm('Remove this gear from the project? (It will remain in the Member Gear list)')) return;
+          const { error } = await db.from('project_gear').delete().eq('id', b.dataset.rmgear);
           if (error) { alert(error.message); return; }
           reloadProject();
         };
