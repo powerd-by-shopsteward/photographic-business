@@ -217,7 +217,21 @@ async function checkNotifications() {
 }
 // ===== DASHBOARD =====
 SCREENS.dashboard = async function(el) {
-  el.innerHTML = '<div class="loading">Loading dashboard…</div>';
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+    </div>
+    <div class="dashboard-grid">
+      <div class="skeleton skeleton-chart"></div>
+      <div class="right-side-stack">
+        <div class="skeleton skeleton-kpi" style="height: 200px;"></div>
+        <div class="skeleton skeleton-kpi" style="height: 200px;"></div>
+      </div>
+    </div>
+  `;
 
   try {
     const today = todayISO();
@@ -460,7 +474,19 @@ SCREENS['live-projects'] = async function(el) {
   if (title) title.textContent = 'Live Projects';
 };
 SCREENS.projects = async function(el) {
-  el.innerHTML = '<div class="loading">Loading projects…</div>';
+  el.innerHTML = `
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   const isOwner = CURRENT_PROFILE.role === 'owner';
 
   try {
@@ -1296,7 +1322,19 @@ async function openMemberForm(existing, profile, onSuccess = null) {
 // =====================================================================
 
 SCREENS.clients = async function(el) {
-  el.innerHTML = '<div class="loading">Loading clients…</div>';
+  el.innerHTML = `
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [cRes, pRes] = await Promise.all([
       db.from('clients').select('*').order('name'),
@@ -1472,7 +1510,14 @@ SCREENS.project = async function(el, projectId) {
 
   if (!projectId) { el.innerHTML = '<div class="card"><p class="error">No project selected.</p></div>'; return; }
   localStorage.setItem('last_viewed_proj_' + projectId, new Date().toISOString());
-  el.innerHTML = '<div class="loading">Loading project…</div>';
+  el.innerHTML = `
+    <div class="card">
+      <div class="skeleton skeleton-title" style="width: 50%;"></div>
+      <div class="skeleton skeleton-cell" style="width: 30%; margin-bottom: 16px;"></div>
+    </div>
+    <div class="skeleton skeleton-title" style="width: 40%; height: 40px; margin-bottom: 16px;"></div>
+    <div class="skeleton skeleton-chart" style="height: 300px;"></div>
+  `;
   const isOwner = CURRENT_PROFILE.role === 'owner';
 
   try {
@@ -3196,7 +3241,25 @@ function openMemberGadgetForm(existing, members) {
 let INVOICES_TAB = 'invoices';
 
 SCREENS.invoices = async function(el) {
-  el.innerHTML = '<div class="loading">Loading…</div>';
+ el.innerHTML = `
+    <div class="stat-grid">
+      <div class="skeleton skeleton-kpi" style="height: 90px;"></div>
+      <div class="skeleton skeleton-kpi" style="height: 90px;"></div>
+      <div class="skeleton skeleton-kpi" style="height: 90px;"></div>
+      <div class="skeleton skeleton-kpi" style="height: 90px;"></div>
+    </div>
+    <div class="card" style="margin-top: 24px;">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5,6].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell short"></div>
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [iRes, pRes, prjRes, pmRes] = await Promise.all([
       db.from('invoices')
