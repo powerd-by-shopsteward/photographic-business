@@ -1073,7 +1073,20 @@ async function addMember({ name, phone, address, role,
 
 // --- 3.2 Members list screen ---
 SCREENS.members = async function(el) {
-  el.innerHTML = '<div class="loading">Loading members…</div>';
+    el.innerHTML = `
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [tmRes, pRes, pmRes, payRes] = await Promise.all([
       db.from('team_members').select('*').order('name'),
@@ -2213,7 +2226,20 @@ SCREENS.project = async function(el, projectId) {
 let AGREEMENTS_TAB = 'list';   // 'list' | 'templates'
 
 SCREENS.agreements = async function(el) {
-  el.innerHTML = '<div class="loading">Loading agreements…</div>';
+   el.innerHTML = `
+    <div class="skeleton skeleton-tabs"></div>
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell short"></div>
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     if (AGREEMENTS_TAB === 'templates') {
       return renderTemplates(el);
@@ -2945,7 +2971,20 @@ SCREENS.agreement = async function(el, id) {
 let GADGETS_TAB = 'studio';   // 'studio' | 'member'
 
 SCREENS.gadgets = async function(el) {
-  el.innerHTML = '<div class="loading">Loading gear…</div>';
+   el.innerHTML = `
+    <div class="skeleton skeleton-tabs"></div>
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [gRes, mgRes, tmRes] = await Promise.all([
       db.from('gadgets').select('*').order('name'),
@@ -3756,7 +3795,26 @@ async function printInvoice(inv) {
 let REPORTS_TAB = 'profitability';
 
 SCREENS.reports = async function(el) {
-  el.innerHTML = '<div class="loading">Loading reports…</div>';
+    el.innerHTML = `
+    <div class="skeleton skeleton-tabs"></div>
+    <div class="stat-grid">
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+    </div>
+    <div class="card" style="margin-top: 24px;">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4,5].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [prjRes, pmRes, exRes, payRes] = await Promise.all([
       db.from('projects').select('id,name,status,confirmed_amount,start_date,client:clients(name)').order('start_date', {ascending:false}),
@@ -3962,7 +4020,24 @@ SCREENS.reports = async function(el) {
 };
 
 SCREENS['studio-value'] = async function(el) {
-  el.innerHTML = '<div class="loading">Calculating studio value…</div>';
+   el.innerHTML = `
+    <div class="stat-grid">
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+    </div>
+    <div class="skeleton skeleton-kpi" style="height: 150px; margin-bottom: 24px;"></div>
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
   try {
     const [gRes, prjRes, payRes, exRes, pmRes] = await Promise.all([
       db.from('gadgets').select('current_value,purchase_price,status'),
