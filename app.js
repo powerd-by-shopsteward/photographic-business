@@ -4510,8 +4510,9 @@ SCREENS.settings = async function(el) {
           invoice_payment_terms: document.getElementById('si-terms').value.trim() || null,
           bank_details:          document.getElementById('si-bank').value.trim() || null,
         };
+                const { data: sData } = await db.from('studio').select('id').limit(1).single();
         const { error } = await db.from('studio').update(payload)
-          .eq('id', '00000000-0000-0000-0000-000000000001');
+          .eq('id', sData.id);
         if (error) { errBox.textContent = error.message; return; }
         alert('Invoice settings saved.');
       };
@@ -4547,8 +4548,9 @@ SCREENS.settings = async function(el) {
           agreement_prefix: document.getElementById('sa-prefix').value.trim() || 'AGR',
           agreement_next_number: Number(document.getElementById('sa-next').value || 1),
         };
+                const { data: sData } = await db.from('studio').select('id').limit(1).single();
         const { error } = await db.from('studio').update(payload)
-          .eq('id', '00000000-0000-0000-0000-000000000001');
+          .eq('id', sData.id);
         if (error) { errBox.textContent = error.message; return; }
         alert('Agreement settings saved.');
       };
