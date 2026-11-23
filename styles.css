@@ -1164,7 +1164,8 @@ html::after {
   content: "";
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  /* 🚨 CHANGED: Neutral Charcoal Grey Gradient */
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
   opacity: 0;
   z-index: -1; 
   pointer-events: none;
@@ -1177,7 +1178,7 @@ html.dark-mode::after {
 /* 3. Dark Mode Specific Overrides */
 html.dark-mode body {
   background: transparent !important; /* Shows the gradient layer behind */
-  color: #f8fafc !important;
+  color: #f4f4f5 !important; /* Slightly warmer white */
 }
 
 html.dark-mode .card,
@@ -1185,9 +1186,10 @@ html.dark-mode .modal,
 html.dark-mode .top-header,
 html.dark-mode .sidebar-pill,
 html.dark-mode .mobile-bottom-nav {
-  background: rgba(30, 41, 59, 0.6) !important;
+  /* 🚨 CHANGED: Neutral Dark Grey Glass */
+  background: rgba(39, 39, 42, 0.6) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4) !important;
 }
 
 html.dark-mode h1, 
@@ -1196,18 +1198,18 @@ html.dark-mode h3,
 html.dark-mode .header-title h1, 
 html.dark-mode .list-item .name,
 html.dark-mode .card-header h2 {
-  color: #f8fafc !important;
+  color: #f4f4f5 !important;
 }
 
 html.dark-mode .muted,
 html.dark-mode .list-item .sub,
 html.dark-mode p.muted {
-  color: #94a3b8 !important;
+  color: #a1a1aa !important; /* Neutral grey text */
 }
 
 html.dark-mode th {
   background: rgba(255, 255, 255, 0.03) !important;
-  color: #cbd5e1 !important;
+  color: #d4d4d8 !important;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 html.dark-mode td {
@@ -1221,7 +1223,7 @@ html.dark-mode input,
 html.dark-mode select, 
 html.dark-mode textarea {
   background: rgba(0, 0, 0, 0.2) !important;
-  color: #f8fafc !important;
+  color: #f4f4f5 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
 html.dark-mode input:focus, 
@@ -1235,7 +1237,6 @@ html.dark-mode textarea:focus {
 html.dark-mode .skeleton {
   background-color: rgba(255, 255, 255, 0.05) !important;
 }
-
 /* ============================================================
    THEME TOGGLE SWITCH (Using custom PNG icons)
    ============================================================ */
@@ -1302,7 +1303,8 @@ html.dark-mode .skeleton {
 
 /* When checked (Dark Mode) */
 input:checked + .slider {
-  background-color: #1e293b;
+  /* 🚨 CHANGE THIS LINE: Dark grey toggle track */
+  background-color: #3f3f46;
 }
 input:checked + .slider span {
   transform: translateX(28px);
