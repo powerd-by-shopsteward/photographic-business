@@ -9,6 +9,13 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+
+    <script>
+    // Prevent flash of light mode on load
+    if (localStorage.getItem('app-theme') === 'dark') {
+      document.documentElement.classList.add('dark-mode');
+    }
+  </script>
   
   <link rel="stylesheet" href="styles.css">
 </head>
