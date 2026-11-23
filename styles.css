@@ -1097,3 +1097,53 @@ tbody tr:hover {
     display: none; /* Hides the image on mobile so the form is centered */
   }
 }
+/* ============================================================
+   SKELETON LOADERS (For perceived performance)
+   ============================================================ */
+
+/* The pulsing animation */
+@keyframes skeleton-pulse {
+  0% { background-color: rgba(226, 232, 240, 0.4); }
+  50% { background-color: rgba(226, 232, 240, 0.8); }
+  100% { background-color: rgba(226, 232, 240, 0.4); }
+}
+
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  border-radius: 6px;
+  background-color: rgba(226, 232, 240, 0.6);
+}
+
+/* Layout blocks */
+.skeleton-kpi {
+  height: 110px;
+  border-radius: 16px;
+}
+
+.skeleton-chart {
+  height: 450px;
+  border-radius: 16px;
+  width: 100%;
+}
+
+.skeleton-title {
+  height: 28px;
+  width: 30%;
+  margin-bottom: 24px;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.skeleton-cell {
+  height: 20px;
+  flex: 1;
+}
+
+.skeleton-cell.short { flex: 0.5; }
+.skeleton-cell.long { flex: 2; }
