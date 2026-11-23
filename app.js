@@ -5,6 +5,11 @@
 
 const db = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON);
 
+// 🚨 SEAMLESS DARK MODE INITIALIZATION
+if (localStorage.getItem('app-theme') === 'dark') {
+  document.documentElement.classList.add('dark-mode');
+}
+
 let CURRENT_PROFILE = null;
 
 // =====================================================================
@@ -4419,7 +4424,24 @@ let SETTINGS_TAB = 'invoicing';
 SCREENS.settings = async function(el) {
   el.innerHTML = '<div class="loading">Loading settings…</div>';
   try {
+    // 🚨 1. GET CURRENT THEME STATE
+    const isDark = document.documentElement.classList.contains('dark-mode');
+
     el.innerHTML = `
+      <!-- 🚨 2. ADD THE APPEARANCE CARD HERE -->
+      <div class="card" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2 style="margin: 0;">Appearance</h2>
+          <p class="muted small" style="margin-top: 4px;">Switch between Light and Dark mode.</p>
+        </div>
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" ${isDark ? 'checked' : ''}>
+          <div class="slider">
+            <span></span>
+          </div>
+        </label>
+      </div>
+
       <div class="tabs" style="margin-bottom:16px;flex-wrap:wrap">
         <button class="${SETTINGS_TAB==='invoicing'?'active':''}" data-tab="invoicing">Invoicing</button>
         <button class="${SETTINGS_TAB==='agreements'?'active':''}" data-tab="agreements">Agreements</button>
@@ -4431,6 +4453,20 @@ SCREENS.settings = async function(el) {
       </div>
       <div id="settings-panel"></div>
     `;
+
+    // 🚨 3. ADD THE TOGGLE EVENT LISTENER HERE
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.onchange = (e) => {
+        if (e.target.checked) {
+          document.documentElement.classList.add('dark-mode');
+          localStorage.setItem('app-theme', 'dark');
+        } else {
+          document.documentElement.classList.remove('dark-mode');
+          localStorage.setItem('app-theme', 'light');
+        }
+      };
+    }
     el.querySelectorAll('.tabs button').forEach(b => {
       b.onclick = () => { SETTINGS_TAB = b.dataset.tab; SCREENS.settings(el); };
     });
