@@ -1402,3 +1402,37 @@ html.dark-mode .sidebar-pill {
     inset 0 1px 0 rgba(255, 255, 255, 0.15), /* Subtle dark reflection */
     0 8px 32px rgba(0, 0, 0, 0.3) !important;
 }
+/* ============================================================
+   DARK MODE TABLE TEXT FIX
+   ============================================================ */
+
+/* 1. Force all text inside tables to be light */
+html.dark-mode table,
+html.dark-mode td,
+html.dark-mode td strong,
+html.dark-mode th {
+  color: #f4f4f5 !important;
+}
+
+/* 2. Fix links inside tables (make them a brighter, readable blue) */
+html.dark-mode td a {
+  color: #60a5fa !important; 
+}
+html.dark-mode td a:hover {
+  color: #93c5fd !important;
+}
+
+/* 3. Ensure the hover state on rows keeps the text visible */
+html.dark-mode tbody tr:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 4. Fix the badges (Live, Completed, Paid, etc.) so they don't look washed out */
+html.dark-mode .badge {
+  color: #0f172a !important; /* Force dark text on the light-colored badges */
+}
+html.dark-mode .badge-live,
+html.dark-mode .badge-paid,
+html.dark-mode .badge-completed {
+  background-color: #dcfce7 !important;
+}
