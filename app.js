@@ -3800,7 +3800,7 @@ async function printInvoice(inv) {
 let REPORTS_TAB = 'profitability';
 
 SCREENS.reports = async function(el) {
-    el.innerHTML = `
+  el.innerHTML = `
     <div class="skeleton skeleton-tabs"></div>
     <div class="stat-grid">
       <div class="skeleton skeleton-kpi"></div>
@@ -3825,7 +3825,7 @@ SCREENS.reports = async function(el) {
       db.from('projects').select('id,name,status,confirmed_amount,start_date,client:clients(name)').order('start_date', {ascending:false}),
       db.from('project_members').select('project_id,team_member_id,pay_amount,status,team_member:team_members(name)'),
       db.from('expenses').select('project_id,amount'),
-            db.from('payments').select('project_id,direction,amount,member_id,date,type'),
+      db.from('payments').select('project_id,direction,amount,member_id,date,type'),
     ]);
     if (prjRes.error) throw prjRes.error;
 
@@ -3834,17 +3834,23 @@ SCREENS.reports = async function(el) {
     const expenses   = exRes.data || [];
     const payments   = payRes.data || [];
 
-        el.innerHTML = `
+    el.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <div class="tabs" style="margin: 0; border: none;">
           <button class="${REPORTS_TAB==='profitability'?'active':''}" data-tab="profitability">Profitability</button>
           <button class="${REPORTS_TAB==='receivables'?'active':''}"   data-tab="receivables">Receivables</button>
           <button class="${REPORTS_TAB==='payouts'?'active':''}"       data-tab="payouts">Team Payouts</button>
         </div>
-        <button id="btn-report-pdf" class="btn-secondary btn-sm">📥 Download PDF</button>
+        <button type="button" id="btn-report-pdf" class="btn-secondary btn-sm" style="position:relative; z-index:100;">📥 Download PDF</button>
       </div>
       <div id="reports-panel"></div>
     `;
+
+    // Wire button IMMEDIATELY
+    document.getElementById('btn-report-pdf').onclick = () => {
+      generateReportPDF(REPORTS_TAB, projects, members, expenses, payments);
+    };
+
     el.querySelectorAll('.tabs button').forEach(b => {
       b.onclick = () => { REPORTS_TAB = b.dataset.tab; SCREENS.reports(el); };
     });
@@ -3855,15 +3861,10 @@ SCREENS.reports = async function(el) {
     if (REPORTS_TAB === 'profitability') {
       const memberPayBy = {};
       members.forEach(m => {
-        if (m.status !== 'cancelled')
-          memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0);
+        if (m.status !== 'cancelled') memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0);
       });
       const expBy = {};
       expenses.forEach(e => expBy[e.project_id] = (expBy[e.project_id] || 0) + Number(e.amount || 0));
-      const receivedBy = {};
-      payments.filter(p => p.direction === 'in').forEach(p => {
-        receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0);
-      });
 
       const rows = projects.map(p => {
         const mp  = memberPayBy[p.id] || 0;
@@ -3952,7 +3953,7 @@ SCREENS.reports = async function(el) {
                   <td><a href="#project/${r.id}">${esc(r.name)}</a></td>
                   <td>${esc(r.client?.name || '—')}</td>
                   <td class="small">${fmtDate(r.start_date)}</td>
-                  <td class="num">${fmtMoney(r.rev || r.confirmed_amount)}</td>
+                  <td class="num">${fmtMoney(r.confirmed_amount)}</td>
                   <td class="num">${fmtMoney(r.paid)}</td>
                   <td class="num" style="color:#dc2626;font-weight:600">${fmtMoney(r.out)}</td>
                   <td class="num small">${r.ageDays}d</td>
@@ -4022,229 +4023,115 @@ SCREENS.reports = async function(el) {
         <p class="muted small">Record team payouts in <a href="#invoices">Invoices → Payments</a> tab with type "Team Payout" and pick the member.</p>`;
     }
 
-    document.getElementById('btn-report-pdf').onclick = () => {
-      generateReportPDF(REPORTS_TAB, projects, members, expenses, payments);
-    };
-
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
 };
 
-SCREENS['studio-value'] = async function(el) {
-   el.innerHTML = `
-    <div class="stat-grid">
-      <div class="skeleton skeleton-kpi"></div>
-      <div class="skeleton skeleton-kpi"></div>
-      <div class="skeleton skeleton-kpi"></div>
-      <div class="skeleton skeleton-kpi"></div>
-    </div>
-    <div class="skeleton skeleton-kpi" style="height: 150px; margin-bottom: 24px;"></div>
-    <div class="card">
-      <div class="skeleton skeleton-title"></div>
-      ${[1,2,3,4].map(() => `
-        <div class="skeleton-row">
-          <div class="skeleton skeleton-cell long"></div>
-          <div class="skeleton skeleton-cell short"></div>
-        </div>
-      `).join('')}
-    </div>
-  `;
-  try {
-    const [gRes, prjRes, payRes, exRes, pmRes] = await Promise.all([
-      db.from('gadgets').select('current_value,purchase_price,status'),
-      db.from('projects').select('id,status,confirmed_amount'),
-      db.from('payments').select('project_id,direction,amount'),
-      db.from('expenses').select('project_id,amount'),
-      db.from('project_members').select('project_id,pay_amount,status')
-    ]);
-
-    const gadgets = gRes.data || [];
-    const proj    = prjRes.data || [];
-    const pays    = payRes.data || [];
-    const exps    = exRes.data || [];
-    const pms     = pmRes.data || [];
-
-    // ---- 1. Equipment (Stock) Value ----
-    const equipmentValue = gadgets.reduce((s, g) =>
-      s + Number(g.current_value || g.purchase_price || 0), 0);
-
-      // ---- 2. Cash in Hand (actual bank movement) ----
-    let totalIn = 0, totalOut = 0;
-    pays.forEach(p => {
-      if (p.direction === 'in')  totalIn  += Number(p.amount);
-      if (p.direction === 'out') totalOut += Number(p.amount);
-    });
-
-    // Calculate total expenses to subtract from cash in hand
-    const totalExpenses = exps.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-
-    // The true Cash in Hand = Money In - Money Out - Total Expenses
-    const cashInHand = totalIn - totalOut - totalExpenses;
-
-    // ---- Aggregators per project ----
-    const receivedByProject = {};
-    pays.filter(p => p.direction === 'in').forEach(p => {
-      receivedByProject[p.project_id] =
-        (receivedByProject[p.project_id] || 0) + Number(p.amount);
-    });
-
-    const memberPayByProject = {};
-    pms.filter(m => m.status !== 'cancelled').forEach(m => {
-      memberPayByProject[m.project_id] =
-        (memberPayByProject[m.project_id] || 0) + Number(m.pay_amount || 0);
-    });
-
-    const expensesByProject = {};
-    exps.forEach(e => {
-      expensesByProject[e.project_id] =
-        (expensesByProject[e.project_id] || 0) + Number(e.amount || 0);
-    });
-
-    // ---- Split projects ----
-    const completedProjects = proj.filter(p => p.status === 'completed');
-    const activeProjects    = proj.filter(p => p.status === 'scheduled' || p.status === 'live');
-
-    // ---- 3. NET pipeline from active projects ----
-    //   = confirmed − received − member pay − expenses
-    //   (This is what you'll actually keep once the shoot is delivered.)
-    let pipelineGross = 0;
-    let pipelineCosts = 0;
-    let netPipeline   = 0;
-
-    activeProjects.forEach(p => {
-      const confirmed = Number(p.confirmed_amount || 0);
-      const received  = receivedByProject[p.id]  || 0;
-      const memPay    = memberPayByProject[p.id]  || 0;
-      const exp       = expensesByProject[p.id]   || 0;
-
-      pipelineGross += confirmed;
-      pipelineCosts += memPay + exp;
-      netPipeline   += (confirmed - received - memPay - exp);
-    });
-
-    // ---- 4. Outstanding receivable from COMPLETED projects ----
-    //   For completed projects we assume costs are already paid (in cash out).
-    //   So remaining receivable = confirmed − received.
-    let completedReceivable = 0;
-    let lifetimeRevenue     = 0;
-    let lifetimeExpenses    = 0;
-    let lifetimeMemberPay   = 0;
-
-    completedProjects.forEach(p => {
-      const confirmed = Number(p.confirmed_amount || 0);
-      const received  = receivedByProject[p.id] || 0;
-      const memPay    = memberPayByProject[p.id] || 0;
-      const exp       = expensesByProject[p.id]  || 0;
-
-      lifetimeRevenue   += confirmed;
-      lifetimeExpenses  += exp;
-      lifetimeMemberPay += memPay;
-      completedReceivable += Math.max(0, confirmed - received);
-    });
-
-    const lifetimeNetProfit = lifetimeRevenue - lifetimeExpenses - lifetimeMemberPay;
-
-    // ==========================================
+// ==========================================
 // 📥 PDF GENERATOR FOR REPORTS
 // ==========================================
 async function generateReportPDF(tab, projects, members, expenses, payments) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4');
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
 
-  const { data: studio } = await db.from('studio').select('name').limit(1).single();
-  const studioName = studio?.name || 'Studio Report';
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const { data: studio } = await db.from('studio').select('name').limit(1).single();
+    const studioName = studio?.name || 'Studio Report';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text(studioName, 15, 20);
-  
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100);
-  doc.text(`Generated on: ${dateStr}`, 15, 27);
-  
-  let title = "Profitability Report";
-  if (tab === 'receivables') title = "Receivables Report";
-  if (tab === 'payouts') title = "Team Payouts Report";
-
-  doc.setFontSize(16);
-  doc.setTextColor(0);
-  doc.text(title, 15, 40);
-
-  if (tab === 'profitability') {
-    const memberPayBy = {};
-    members.forEach(m => { if (m.status !== 'cancelled') memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0); });
-    const expBy = {};
-    expenses.forEach(e => expBy[e.project_id] = (expBy[e.project_id] || 0) + Number(e.amount || 0));
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text(studioName, 15, 20);
     
-    const rows = projects.map(p => {
-      const mp = memberPayBy[p.id] || 0;
-      const ex = expBy[p.id] || 0;
-      const rev = Number(p.confirmed_amount || 0);
-      return [p.name, p.client?.name || '—', fmtMoney(rev), fmtMoney(mp), fmtMoney(ex), fmtMoney(rev - mp - ex)];
-    }).sort((a,b) => Number(b[5].replace(/,/g,'')) - Number(a[5].replace(/,/g,'')));
-
-    doc.autoTable({
-      startY: 45,
-      head: [['Project', 'Client', 'Revenue', 'Member Pay', 'Expenses', 'Profit']],
-      body: rows,
-      theme: 'grid',
-      headStyles: { fillColor: [37, 99, 235] },
-      styles: { fontSize: 9 }
-    });
-  } 
-  else if (tab === 'receivables') {
-    const receivedBy = {};
-    payments.filter(p => p.direction === 'in').forEach(p => receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0));
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${dateStr}`, 15, 27);
     
-    const rows = projects.map(p => {
-      const rec = Number(p.confirmed_amount || 0);
-      const paid = receivedBy[p.id] || 0;
-      const out = Math.max(0, rec - paid);
-      return { ...p, paid, out };
-    }).filter(r => r.out > 0).sort((a,b) => b.out - a.out).map(r => [
-      r.name, r.client?.name || '—', fmtDate(r.start_date), fmtMoney(r.confirmed_amount), fmtMoney(r.paid), fmtMoney(r.out)
-    ]);
+    let title = "Profitability Report";
+    if (tab === 'receivables') title = "Receivables Report";
+    if (tab === 'payouts') title = "Team Payouts Report";
 
-    doc.autoTable({
-      startY: 45,
-      head: [['Project', 'Client', 'Date', 'Confirmed', 'Received', 'Outstanding']],
-      body: rows,
-      theme: 'grid',
-      headStyles: { fillColor: [239, 68, 68] },
-      styles: { fontSize: 9 }
-    });
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text(title, 15, 40);
+
+    if (tab === 'profitability') {
+      const memberPayBy = {};
+      members.forEach(m => { if (m.status !== 'cancelled') memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0); });
+      const expBy = {};
+      expenses.forEach(e => expBy[e.project_id] = (expBy[e.project_id] || 0) + Number(e.amount || 0));
+      
+      const rows = projects.map(p => {
+        const mp = memberPayBy[p.id] || 0;
+        const ex = expBy[p.id] || 0;
+        const rev = Number(p.confirmed_amount || 0);
+        return [p.name, p.client?.name || '—', fmtMoney(rev), fmtMoney(mp), fmtMoney(ex), fmtMoney(rev - mp - ex)];
+      }).sort((a,b) => Number(b[5].replace(/,/g,'')) - Number(a[5].replace(/,/g,'')));
+
+      doc.autoTable({
+        startY: 45,
+        head: [['Project', 'Client', 'Revenue', 'Member Pay', 'Expenses', 'Profit']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [37, 99, 235] },
+        styles: { fontSize: 9 }
+      });
+    } 
+    else if (tab === 'receivables') {
+      const receivedBy = {};
+      payments.filter(p => p.direction === 'in').forEach(p => receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0));
+      
+      const rows = projects.map(p => {
+        const rec = Number(p.confirmed_amount || 0);
+        const paid = receivedBy[p.id] || 0;
+        const out = Math.max(0, rec - paid);
+        return { ...p, paid, out };
+      }).filter(r => r.out > 0).sort((a,b) => b.out - a.out).map(r => [
+        r.name, r.client?.name || '—', fmtDate(r.start_date), fmtMoney(r.confirmed_amount), fmtMoney(r.paid), fmtMoney(r.out)
+      ]);
+
+      doc.autoTable({
+        startY: 45,
+        head: [['Project', 'Client', 'Date', 'Confirmed', 'Received', 'Outstanding']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [239, 68, 68] },
+        styles: { fontSize: 9 }
+      });
+    }
+    else if (tab === 'payouts') {
+      const byMember = {};
+      members.forEach(m => {
+        if (m.status === 'cancelled') return;
+        if (!byMember[m.team_member_id]) byMember[m.team_member_id] = { name: m.team_member?.name || '—', total: 0, paid: 0 };
+        byMember[m.team_member_id].total += Number(m.pay_amount || 0);
+      });
+      payments.filter(p => p.direction === 'out' && p.type === 'team_payout' && p.member_id).forEach(p => {
+        if (byMember[p.member_id]) byMember[p.member_id].paid += Number(p.amount || 0);
+      });
+
+      const rows = Object.values(byMember).sort((a,b) => (b.total - b.paid) - (a.total - a.paid)).map(r => [
+        r.name, fmtMoney(r.total), fmtMoney(r.paid), fmtMoney(r.total - r.paid)
+      ]);
+
+      doc.autoTable({
+        startY: 45,
+        head: [['Member Name', 'Total Owed', 'Total Paid', 'Balance Due']],
+        body: rows,
+        theme: 'grid',
+        headStyles: { fillColor: [16, 185, 129] },
+        styles: { fontSize: 10 }
+      });
+    }
+
+    doc.save(`${title.replace(/ /g, '_')}_${dateStr.replace(/ /g, '_')}.pdf`);
+  } catch (err) {
+    console.error("PDF Error:", err);
+    alert("Failed to generate PDF: " + err.message);
   }
-  else if (tab === 'payouts') {
-    const byMember = {};
-    members.forEach(m => {
-      if (m.status === 'cancelled') return;
-      if (!byMember[m.team_member_id]) byMember[m.team_member_id] = { name: m.team_member?.name || '—', total: 0, paid: 0 };
-      byMember[m.team_member_id].total += Number(m.pay_amount || 0);
-    });
-    payments.filter(p => p.direction === 'out' && p.type === 'team_payout' && p.member_id).forEach(p => {
-      if (byMember[p.member_id]) byMember[p.member_id].paid += Number(p.amount || 0);
-    });
-
-    const rows = Object.values(byMember).sort((a,b) => (b.total - b.paid) - (a.total - a.paid)).map(r => [
-      r.name, fmtMoney(r.total), fmtMoney(r.paid), fmtMoney(r.total - r.paid)
-    ]);
-
-    doc.autoTable({
-      startY: 45,
-      head: [['Member Name', 'Total Owed', 'Total Paid', 'Balance Due']],
-      body: rows,
-      theme: 'grid',
-      headStyles: { fillColor: [16, 185, 129] },
-      styles: { fontSize: 10 }
-    });
-  }
-
-  doc.save(`${title.replace(/ /g, '_')}_${dateStr.replace(/ /g, '_')}.pdf`);
 }
-
     // ---- 5. TOTAL STUDIO VALUE (corrected) ----
     //   Equipment + actual cash + net pipeline + completed receivables
     const totalStudioValue = equipmentValue + cashInHand + netPipeline + completedReceivable;
