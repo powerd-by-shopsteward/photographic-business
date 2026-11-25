@@ -1309,3 +1309,46 @@ input:checked + .slider {
 input:checked + .slider span {
   transform: translateX(28px);
 }
+/* ============================================================
+   NESTED CARDS (Card-under-Card Layout for Dashboard)
+   ============================================================ */
+
+/* 1. Override the old flat list items */
+.list-item {
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 14px 16px; 
+  margin-bottom: 10px; 
+  border-radius: 12px; 
+  background: #ffffff; 
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: none !important; /* Removes the old divider line */
+}
+
+/* 2. Hover Effect (Lift & Deepen Shadow) */
+.list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+}
+
+/* 3. Remove margin from the last item so it fits perfectly in the card */
+.list-item:last-child {
+  margin-bottom: 0;
+}
+
+/* 4. Dark Mode Overrides */
+html.dark-mode .list-item {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+html.dark-mode .list-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
