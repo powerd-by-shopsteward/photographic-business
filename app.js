@@ -4132,8 +4132,111 @@ async function generateReportPDF(tab, projects, members, expenses, payments) {
     alert("Failed to generate PDF: " + err.message);
   }
 }
-    // ---- 5. TOTAL STUDIO VALUE (corrected) ----
-    //   Equipment + actual cash + net pipeline + completed receivables
+   SCREENS['studio-value'] = async function(el) {
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+      <div class="skeleton skeleton-kpi"></div>
+    </div>
+    <div class="skeleton skeleton-kpi" style="height: 150px; margin-bottom: 24px;"></div>
+    <div class="card">
+      <div class="skeleton skeleton-title"></div>
+      ${[1,2,3,4].map(() => `
+        <div class="skeleton-row">
+          <div class="skeleton skeleton-cell long"></div>
+          <div class="skeleton skeleton-cell short"></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  try {
+    const [gRes, prjRes, payRes, exRes, pmRes] = await Promise.all([
+      db.from('gadgets').select('current_value,purchase_price,status'),
+      db.from('projects').select('id,status,confirmed_amount'),
+      db.from('payments').select('project_id,direction,amount'),
+      db.from('expenses').select('project_id,amount'),
+      db.from('project_members').select('project_id,pay_amount,status')
+    ]);
+
+    const gadgets = gRes.data || [];
+    const proj    = prjRes.data || [];
+    const pays    = payRes.data || [];
+    const exps    = exRes.data || [];
+    const pms     = pmRes.data || [];
+
+    // ---- 1. Equipment (Stock) Value ----
+    const equipmentValue = gadgets.reduce((s, g) =>
+      s + Number(g.current_value || g.purchase_price || 0), 0);
+
+    // ---- 2. Cash in Hand ----
+    let totalIn = 0, totalOut = 0;
+    pays.forEach(p => {
+      if (p.direction === 'in')  totalIn  += Number(p.amount);
+      if (p.direction === 'out') totalOut += Number(p.amount);
+    });
+
+    const totalExpenses = exps.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+    const cashInHand = totalIn - totalOut - totalExpenses;
+
+    // ---- Aggregators per project ----
+    const receivedByProject = {};
+    pays.filter(p => p.direction === 'in').forEach(p => {
+      receivedByProject[p.project_id] = (receivedByProject[p.project_id] || 0) + Number(p.amount);
+    });
+
+    const memberPayByProject = {};
+    pms.filter(m => m.status !== 'cancelled').forEach(m => {
+      memberPayByProject[m.project_id] = (memberPayByProject[m.project_id] || 0) + Number(m.pay_amount || 0);
+    });
+
+    const expensesByProject = {};
+    exps.forEach(e => {
+      expensesByProject[e.project_id] = (expensesByProject[e.project_id] || 0) + Number(e.amount || 0);
+    });
+
+    // ---- Split projects ----
+    const completedProjects = proj.filter(p => p.status === 'completed');
+    const activeProjects    = proj.filter(p => p.status === 'scheduled' || p.status === 'live');
+
+    // ---- 3. NET pipeline from active projects ----
+    let pipelineGross = 0;
+    let pipelineCosts = 0;
+    let netPipeline   = 0;
+
+    activeProjects.forEach(p => {
+      const confirmed = Number(p.confirmed_amount || 0);
+      const received  = receivedByProject[p.id]  || 0;
+      const memPay    = memberPayByProject[p.id]  || 0;
+      const exp       = expensesByProject[p.id]   || 0;
+
+      pipelineGross += confirmed;
+      pipelineCosts += memPay + exp;
+      netPipeline   += (confirmed - received - memPay - exp);
+    });
+
+    // ---- 4. Outstanding receivable from COMPLETED projects ----
+    let completedReceivable = 0;
+    let lifetimeRevenue     = 0;
+    let lifetimeExpenses    = 0;
+    let lifetimeMemberPay   = 0;
+
+    completedProjects.forEach(p => {
+      const confirmed = Number(p.confirmed_amount || 0);
+      const received  = receivedByProject[p.id] || 0;
+      const memPay    = memberPayByProject[p.id] || 0;
+      const exp       = expensesByProject[p.id]  || 0;
+
+      lifetimeRevenue   += confirmed;
+      lifetimeExpenses  += exp;
+      lifetimeMemberPay += memPay;
+      completedReceivable += Math.max(0, confirmed - received);
+    });
+
+    const lifetimeNetProfit = lifetimeRevenue - lifetimeExpenses - lifetimeMemberPay;
+
+    // ---- 5. TOTAL STUDIO VALUE ----
     const totalStudioValue = equipmentValue + cashInHand + netPipeline + completedReceivable;
 
     // ---- Render ----
@@ -4166,8 +4269,8 @@ async function generateReportPDF(tab, projects, members, expenses, payments) {
         </div>
       </div>
 
-     <div class="card" style="background:linear-gradient(135deg,#1f2937,#374151) !important;color:#fff !important; backdrop-filter: none !important; border:none !important;">
-        <div style="text-align:center;padding:20px 0">
+      <div class="card" style="background:linear-gradient(135deg,#1f2937,#374151) !important;color:#fff !important; backdrop-filter: none !important; border:none !important; padding: 24px !important; margin-bottom: 24px !important;">
+        <div style="text-align:center;padding:10px 0">
           <div style="font-size:14px;opacity:.7;text-transform:uppercase;letter-spacing:2px">Total Studio Value</div>
           <div style="font-size:42px;font-weight:700;margin-top:8px">${fmtMoney(totalStudioValue)}</div>
           <div style="font-size:12px;opacity:.6;margin-top:6px">Equipment + Cash + Net Pipeline + Receivables</div>
@@ -4194,7 +4297,7 @@ async function generateReportPDF(tab, projects, members, expenses, payments) {
       </p>
     `;
 
-document.getElementById('btn-studio-pdf').onclick = () => {
+    document.getElementById('btn-studio-pdf').onclick = () => {
       generateStudioValuePDF({
         equipmentValue, cashInHand, completedReceivable, netPipeline,
         totalStudioValue, lifetimeRevenue, lifetimeExpenses, lifetimeMemberPay, lifetimeNetProfit
@@ -4210,78 +4313,83 @@ document.getElementById('btn-studio-pdf').onclick = () => {
 // 📥 PDF GENERATOR FOR STUDIO VALUE
 // ==========================================
 async function generateStudioValuePDF(data) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF('p', 'mm', 'a4');
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
 
-  const { data: studio } = await db.from('studio').select('name').limit(1).single();
-  const studioName = studio?.name || 'Studio Value Report';
-  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const { data: studio } = await db.from('studio').select('name').limit(1).single();
+    const studioName = studio?.name || 'Studio Value Report';
+    const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 
-  doc.setFontSize(20);
-  doc.setFont("helvetica", "bold");
-  doc.text(studioName, 15, 20);
-  
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100);
-  doc.text(`Generated on: ${dateStr}`, 15, 27);
-  
-  doc.setFontSize(16);
-  doc.setTextColor(0);
-  doc.text("Studio Valuation Report", 15, 40);
+    doc.setFontSize(20);
+    doc.setFont("helvetica", "bold");
+    doc.text(studioName, 15, 20);
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${dateStr}`, 15, 27);
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text("Studio Valuation Report", 15, 40);
 
-  // Big total box
-  doc.setFillColor(30, 41, 59);
-  doc.rect(15, 45, 180, 30, 'F');
-  
-  doc.setTextColor(255);
-  doc.setFontSize(12);
-  doc.text("TOTAL STUDIO VALUE", 105, 55, { align: "center" });
-  
-  doc.setFontSize(24);
-  doc.setFont("helvetica", "bold");
-  doc.text(`INR ${fmtMoney(data.totalStudioValue)}`, 105, 65, { align: "center" });
+    // Big total box
+    doc.setFillColor(30, 41, 59);
+    doc.rect(15, 45, 180, 30, 'F');
+    
+    doc.setTextColor(255);
+    doc.setFontSize(12);
+    doc.text("TOTAL STUDIO VALUE", 105, 55, { align: "center" });
+    
+    doc.setFontSize(24);
+    doc.setFont("helvetica", "bold");
+    doc.text(`INR ${fmtMoney(data.totalStudioValue)}`, 105, 65, { align: "center" });
 
-  doc.setTextColor(0);
-  doc.setFont("helvetica", "normal");
-  
-  const breakdownRows = [
-    ['Stock (Equipment)', `INR ${fmtMoney(data.equipmentValue)}`],
-    ['Cash in Hand', `INR ${fmtMoney(data.cashInHand)}`],
-    ['Completed Receivables', `INR ${fmtMoney(data.completedReceivable)}`],
-    ['Net Active Pipeline', `INR ${fmtMoney(data.netPipeline)}`]
-  ];
+    doc.setTextColor(0);
+    doc.setFont("helvetica", "normal");
+    
+    const breakdownRows = [
+      ['Stock (Equipment)', `INR ${fmtMoney(data.equipmentValue)}`],
+      ['Cash in Hand', `INR ${fmtMoney(data.cashInHand)}`],
+      ['Completed Receivables', `INR ${fmtMoney(data.completedReceivable)}`],
+      ['Net Active Pipeline', `INR ${fmtMoney(data.netPipeline)}`]
+    ];
 
-  doc.autoTable({
-    startY: 85,
-    head: [['Asset Category', 'Value']],
-    body: breakdownRows,
-    theme: 'striped',
-    headStyles: { fillColor: [37, 99, 235] },
-    styles: { fontSize: 11, cellPadding: 4 }
-  });
+    doc.autoTable({
+      startY: 85,
+      head: [['Asset Category', 'Value']],
+      body: breakdownRows,
+      theme: 'striped',
+      headStyles: { fillColor: [37, 99, 235] },
+      styles: { fontSize: 11, cellPadding: 4 }
+    });
 
-  const nextY = doc.lastAutoTable.finalY + 15;
-  doc.setFontSize(14);
-  doc.setFont("helvetica", "bold");
-  doc.text("Lifetime Performance", 15, nextY);
+    const nextY = doc.lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Lifetime Performance", 15, nextY);
 
-  const perfRows = [
-    ['Gross Revenue', `INR ${fmtMoney(data.lifetimeRevenue)}`],
-    ['Less: Expenses', `- INR ${fmtMoney(data.lifetimeExpenses)}`],
-    ['Less: Member Payouts', `- INR ${fmtMoney(data.lifetimeMemberPay)}`],
-    [{ content: 'Net Profit (Completed)', styles: { fontStyle: 'bold' } }, { content: `INR ${fmtMoney(data.lifetimeNetProfit)}`, styles: { fontStyle: 'bold', textColor: [5, 150, 105] } }]
-  ];
+    const perfRows = [
+      ['Gross Revenue', `INR ${fmtMoney(data.lifetimeRevenue)}`],
+      ['Less: Expenses', `- INR ${fmtMoney(data.lifetimeExpenses)}`],
+      ['Less: Member Payouts', `- INR ${fmtMoney(data.lifetimeMemberPay)}`],
+      [{ content: 'Net Profit (Completed)', styles: { fontStyle: 'bold' } }, { content: `INR ${fmtMoney(data.lifetimeNetProfit)}`, styles: { fontStyle: 'bold', textColor: [5, 150, 105] } }]
+    ];
 
-  doc.autoTable({
-    startY: nextY + 5,
-    body: perfRows,
-    theme: 'plain',
-    styles: { fontSize: 11, cellPadding: 3 },
-    columnStyles: { 1: { halign: 'right' } }
-  });
+    doc.autoTable({
+      startY: nextY + 5,
+      body: perfRows,
+      theme: 'plain',
+      styles: { fontSize: 11, cellPadding: 3 },
+      columnStyles: { 1: { halign: 'right' } }
+    });
 
-  doc.save(`Studio_Value_${dateStr.replace(/ /g, '_')}.pdf`);
+    doc.save(`Studio_Value_${dateStr.replace(/ /g, '_')}.pdf`);
+  } catch (err) {
+    console.error("Studio PDF Error:", err);
+    alert("Failed to generate Studio PDF: " + err.message);
+  }
 }
 
 // ============ PROFILE ============
