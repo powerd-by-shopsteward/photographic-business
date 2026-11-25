@@ -3825,7 +3825,7 @@ SCREENS.reports = async function(el) {
       db.from('projects').select('id,name,status,confirmed_amount,start_date,client:clients(name)').order('start_date', {ascending:false}),
       db.from('project_members').select('project_id,team_member_id,pay_amount,status,team_member:team_members(name)'),
       db.from('expenses').select('project_id,amount'),
-      db.from('payments').select('project_id,direction,amount,member_id,date'),
+            db.from('payments').select('project_id,direction,amount,member_id,date,type'),
     ]);
     if (prjRes.error) throw prjRes.error;
 
