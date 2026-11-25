@@ -3834,11 +3834,14 @@ SCREENS.reports = async function(el) {
     const expenses   = exRes.data || [];
     const payments   = payRes.data || [];
 
-    el.innerHTML = `
-      <div class="tabs" style="margin-bottom:16px">
-        <button class="${REPORTS_TAB==='profitability'?'active':''}" data-tab="profitability">Profitability</button>
-        <button class="${REPORTS_TAB==='receivables'?'active':''}"   data-tab="receivables">Receivables</button>
-        <button class="${REPORTS_TAB==='payouts'?'active':''}"       data-tab="payouts">Team Payouts</button>
+        el.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <div class="tabs" style="margin: 0; border: none;">
+          <button class="${REPORTS_TAB==='profitability'?'active':''}" data-tab="profitability">Profitability</button>
+          <button class="${REPORTS_TAB==='receivables'?'active':''}"   data-tab="receivables">Receivables</button>
+          <button class="${REPORTS_TAB==='payouts'?'active':''}"       data-tab="payouts">Team Payouts</button>
+        </div>
+        <button id="btn-report-pdf" class="btn-secondary btn-sm">📥 Download PDF</button>
       </div>
       <div id="reports-panel"></div>
     `;
@@ -4019,6 +4022,10 @@ SCREENS.reports = async function(el) {
         <p class="muted small">Record team payouts in <a href="#invoices">Invoices → Payments</a> tab with type "Team Payout" and pick the member.</p>`;
     }
 
+    document.getElementById('btn-report-pdf').onclick = () => {
+      generateReportPDF(REPORTS_TAB, projects, members, expenses, payments);
+    };
+
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
@@ -4138,12 +4145,115 @@ SCREENS['studio-value'] = async function(el) {
 
     const lifetimeNetProfit = lifetimeRevenue - lifetimeExpenses - lifetimeMemberPay;
 
+    // ==========================================
+// 📥 PDF GENERATOR FOR REPORTS
+// ==========================================
+async function generateReportPDF(tab, projects, members, expenses, payments) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+
+  const { data: studio } = await db.from('studio').select('name').limit(1).single();
+  const studioName = studio?.name || 'Studio Report';
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text(studioName, 15, 20);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Generated on: ${dateStr}`, 15, 27);
+  
+  let title = "Profitability Report";
+  if (tab === 'receivables') title = "Receivables Report";
+  if (tab === 'payouts') title = "Team Payouts Report";
+
+  doc.setFontSize(16);
+  doc.setTextColor(0);
+  doc.text(title, 15, 40);
+
+  if (tab === 'profitability') {
+    const memberPayBy = {};
+    members.forEach(m => { if (m.status !== 'cancelled') memberPayBy[m.project_id] = (memberPayBy[m.project_id] || 0) + Number(m.pay_amount || 0); });
+    const expBy = {};
+    expenses.forEach(e => expBy[e.project_id] = (expBy[e.project_id] || 0) + Number(e.amount || 0));
+    
+    const rows = projects.map(p => {
+      const mp = memberPayBy[p.id] || 0;
+      const ex = expBy[p.id] || 0;
+      const rev = Number(p.confirmed_amount || 0);
+      return [p.name, p.client?.name || '—', fmtMoney(rev), fmtMoney(mp), fmtMoney(ex), fmtMoney(rev - mp - ex)];
+    }).sort((a,b) => Number(b[5].replace(/,/g,'')) - Number(a[5].replace(/,/g,'')));
+
+    doc.autoTable({
+      startY: 45,
+      head: [['Project', 'Client', 'Revenue', 'Member Pay', 'Expenses', 'Profit']],
+      body: rows,
+      theme: 'grid',
+      headStyles: { fillColor: [37, 99, 235] },
+      styles: { fontSize: 9 }
+    });
+  } 
+  else if (tab === 'receivables') {
+    const receivedBy = {};
+    payments.filter(p => p.direction === 'in').forEach(p => receivedBy[p.project_id] = (receivedBy[p.project_id] || 0) + Number(p.amount || 0));
+    
+    const rows = projects.map(p => {
+      const rec = Number(p.confirmed_amount || 0);
+      const paid = receivedBy[p.id] || 0;
+      const out = Math.max(0, rec - paid);
+      return { ...p, paid, out };
+    }).filter(r => r.out > 0).sort((a,b) => b.out - a.out).map(r => [
+      r.name, r.client?.name || '—', fmtDate(r.start_date), fmtMoney(r.confirmed_amount), fmtMoney(r.paid), fmtMoney(r.out)
+    ]);
+
+    doc.autoTable({
+      startY: 45,
+      head: [['Project', 'Client', 'Date', 'Confirmed', 'Received', 'Outstanding']],
+      body: rows,
+      theme: 'grid',
+      headStyles: { fillColor: [239, 68, 68] },
+      styles: { fontSize: 9 }
+    });
+  }
+  else if (tab === 'payouts') {
+    const byMember = {};
+    members.forEach(m => {
+      if (m.status === 'cancelled') return;
+      if (!byMember[m.team_member_id]) byMember[m.team_member_id] = { name: m.team_member?.name || '—', total: 0, paid: 0 };
+      byMember[m.team_member_id].total += Number(m.pay_amount || 0);
+    });
+    payments.filter(p => p.direction === 'out' && p.type === 'team_payout' && p.member_id).forEach(p => {
+      if (byMember[p.member_id]) byMember[p.member_id].paid += Number(p.amount || 0);
+    });
+
+    const rows = Object.values(byMember).sort((a,b) => (b.total - b.paid) - (a.total - a.paid)).map(r => [
+      r.name, fmtMoney(r.total), fmtMoney(r.paid), fmtMoney(r.total - r.paid)
+    ]);
+
+    doc.autoTable({
+      startY: 45,
+      head: [['Member Name', 'Total Owed', 'Total Paid', 'Balance Due']],
+      body: rows,
+      theme: 'grid',
+      headStyles: { fillColor: [16, 185, 129] },
+      styles: { fontSize: 10 }
+    });
+  }
+
+  doc.save(`${title.replace(/ /g, '_')}_${dateStr.replace(/ /g, '_')}.pdf`);
+}
+
     // ---- 5. TOTAL STUDIO VALUE (corrected) ----
     //   Equipment + actual cash + net pipeline + completed receivables
     const totalStudioValue = equipmentValue + cashInHand + netPipeline + completedReceivable;
 
     // ---- Render ----
     el.innerHTML = `
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+        <button id="btn-studio-pdf" class="btn-secondary btn-sm">📥 Download PDF</button>
+      </div>
       <div class="stat-grid">
         <div class="stat">
           <div class="label">Stock (Equipment)</div>
@@ -4196,10 +4306,97 @@ SCREENS['studio-value'] = async function(el) {
         • <strong>Total Studio Value</strong> = Equipment + Cash + Net Pipeline + Completed Receivables.
       </p>
     `;
+
+document.getElementById('btn-studio-pdf').onclick = () => {
+      generateStudioValuePDF({
+        equipmentValue, cashInHand, completedReceivable, netPipeline,
+        totalStudioValue, lifetimeRevenue, lifetimeExpenses, lifetimeMemberPay, lifetimeNetProfit
+      });
+    };
+    
   } catch (err) {
     el.innerHTML = `<div class="card"><p class="error">${esc(err.message)}</p></div>`;
   }
 };
+
+// ==========================================
+// 📥 PDF GENERATOR FOR STUDIO VALUE
+// ==========================================
+async function generateStudioValuePDF(data) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+
+  const { data: studio } = await db.from('studio').select('name').limit(1).single();
+  const studioName = studio?.name || 'Studio Value Report';
+  const dateStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text(studioName, 15, 20);
+  
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100);
+  doc.text(`Generated on: ${dateStr}`, 15, 27);
+  
+  doc.setFontSize(16);
+  doc.setTextColor(0);
+  doc.text("Studio Valuation Report", 15, 40);
+
+  // Big total box
+  doc.setFillColor(30, 41, 59);
+  doc.rect(15, 45, 180, 30, 'F');
+  
+  doc.setTextColor(255);
+  doc.setFontSize(12);
+  doc.text("TOTAL STUDIO VALUE", 105, 55, { align: "center" });
+  
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text(`INR ${fmtMoney(data.totalStudioValue)}`, 105, 65, { align: "center" });
+
+  doc.setTextColor(0);
+  doc.setFont("helvetica", "normal");
+  
+  const breakdownRows = [
+    ['Stock (Equipment)', `INR ${fmtMoney(data.equipmentValue)}`],
+    ['Cash in Hand', `INR ${fmtMoney(data.cashInHand)}`],
+    ['Completed Receivables', `INR ${fmtMoney(data.completedReceivable)}`],
+    ['Net Active Pipeline', `INR ${fmtMoney(data.netPipeline)}`]
+  ];
+
+  doc.autoTable({
+    startY: 85,
+    head: [['Asset Category', 'Value']],
+    body: breakdownRows,
+    theme: 'striped',
+    headStyles: { fillColor: [37, 99, 235] },
+    styles: { fontSize: 11, cellPadding: 4 }
+  });
+
+  const nextY = doc.lastAutoTable.finalY + 15;
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("Lifetime Performance", 15, nextY);
+
+  const perfRows = [
+    ['Gross Revenue', `INR ${fmtMoney(data.lifetimeRevenue)}`],
+    ['Less: Expenses', `- INR ${fmtMoney(data.lifetimeExpenses)}`],
+    ['Less: Member Payouts', `- INR ${fmtMoney(data.lifetimeMemberPay)}`],
+    [{ content: 'Net Profit (Completed)', styles: { fontStyle: 'bold' } }, { content: `INR ${fmtMoney(data.lifetimeNetProfit)}`, styles: { fontStyle: 'bold', textColor: [5, 150, 105] } }]
+  ];
+
+  doc.autoTable({
+    startY: nextY + 5,
+    body: perfRows,
+    theme: 'plain',
+    styles: { fontSize: 11, cellPadding: 3 },
+    columnStyles: { 1: { halign: 'right' } }
+  });
+
+  doc.save(`Studio_Value_${dateStr.replace(/ /g, '_')}.pdf`);
+}
+
 // ============ PROFILE ============
 SCREENS.profile = async function(el) {
   el.innerHTML = '<div class="loading">Loading profile…</div>';
