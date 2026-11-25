@@ -1359,3 +1359,46 @@ html.dark-mode .list-item:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
+/* ============================================================
+   ULTRA-CLEAR GLASS OVERRIDE (For Header & Sidebar)
+   (Delete this block if you want to revert to the old frosted look)
+   ============================================================ */
+
+/* 1. TOP HEADER - Clear Glass */
+.top-header {
+  background: rgba(255, 255, 255, 0.25) !important; /* Much more transparent */
+  backdrop-filter: blur(16px) saturate(180%) !important; /* Saturated blur */
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important; /* Crisp edge */
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.8), /* Top reflection */
+    0 8px 32px rgba(0, 0, 0, 0.05) !important; 
+}
+
+/* 2. SIDEBAR - Clear Glass */
+.sidebar-pill {
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(16px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.8), 
+    0 8px 32px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* 3. Ensure the sidebar's diagonal glare effect is slightly softer */
+.sidebar-pill::before {
+  opacity: 0.5 !important; 
+}
+
+/* ============================================================
+   DARK MODE SUPPORT FOR CLEAR GLASS
+   ============================================================ */
+html.dark-mode .top-header,
+html.dark-mode .sidebar-pill {
+  background: rgba(15, 23, 42, 0.35) !important; /* Transparent dark slate */
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 
+    inset 0 1px 0 rgba(255, 255, 255, 0.15), /* Subtle dark reflection */
+    0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
