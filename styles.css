@@ -1436,3 +1436,31 @@ html.dark-mode .badge-paid,
 html.dark-mode .badge-completed {
   background-color: #dcfce7 !important;
 }
+/* ============================================================
+   DARK MODE FIX FOR PLAIN STAT CARDS (Invoices, Reports)
+   ============================================================ */
+
+/* 1. Turn the white background into dark glass */
+html.dark-mode .stat {
+  background: rgba(39, 39, 42, 0.6) !important; 
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 2. Make the labels light grey */
+html.dark-mode .stat .label {
+  color: #94a3b8 !important;
+}
+
+/* 3. Make the main numbers white */
+html.dark-mode .stat .value {
+  color: #f8fafc !important;
+}
+
+/* 4. Keep the positive (green) and negative (red) numbers vibrant */
+html.dark-mode .stat .value.pos {
+  color: #10b981 !important; 
+}
+html.dark-mode .stat .value.neg {
+  color: #ef4444 !important; 
+}
