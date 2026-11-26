@@ -1,0 +1,55 @@
+name: Supabase Keepalive
+
+on:
+  schedule:
+    # Runs every 12 hours at 15 minutes past the hour (00:15 and 12:15 UTC)
+    # Adding the 15-minute offset prevents GitHub Actions delays during peak hours
+    - cron: '15 */12 * * *'
+  workflow_dispatch: # Allows you to run it manually from the Actions tab
+
+# Prevents multiple pings from stacking up if GitHub is slow
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+    
+    steps:
+      - name: Validate Secrets
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "❌ Error: Secrets are missing. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your GitHub Repository Secrets."
+            exit 1
+          fi
+          echo "✅ Secrets validated successfully."
+
+      - name: Ping Supabase Database
+        run: |
+          echo "⏳ Pinging Supabase..."
+          
+          # Capture both the HTTP status code and the response body
+          RESPONSE=$(curl -sS --max-time 15 \
+            -X GET "$SUPABASE_URL/rest/v1/keepalive?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -w "\nHTTP_STATUS:%{http_code}") || true
+          
+          # Extract the status code from the response
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -oP 'HTTP_STATUS:\K\d+')
+          BODY=$(echo "$RESPONSE" | sed '/HTTP_STATUS:/d')
+
+          echo "📊 HTTP Status: $HTTP_STATUS"
+          echo "📦 Response Body: $BODY"
+
+          # Check if the status is 200 (OK)
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "✅ Success! Supabase is awake and responding."
+          else
+            echo "❌ Failed to ping Supabase. Status code: $HTTP_STATUS"
+            exit 1
+          fi
